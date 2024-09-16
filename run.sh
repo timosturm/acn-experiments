@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --output=log/%x.log
-#SBATCH --ntasks=ranking
+#SBATCH --ntasks=1
 #SBATCH --mem=64gb
 #SBATCH --time=168:00:00
 #SBATCH --cpus-per-task=3
-#BATCH --gpus-per-task=ranking
+#SBATCH --gpus-per-task=1
 #SBATCH --partition=main
 
 date;hostname;pwd
