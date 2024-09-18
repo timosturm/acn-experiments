@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --output=log/%x.log
+#SBATCH --output=complete.log
 #SBATCH --ntasks=1
 #SBATCH --mem=64gb
 #SBATCH --time=168:00:00
