@@ -6,6 +6,8 @@ from gymportal.environment import single_charging_schedule
 from gymportal.evaluation import *
 from tqdm import tqdm
 
+from acn_experiments.utils import CustomSchedule, FlattenSimEnv
+
 metrics = {
     "SoC >= 90%": percentage_soc,
     "mean SoC": mean_soc,
@@ -26,10 +28,16 @@ def run_simulations(models: Dict[str, CanSchedule], metrics: Dict[str, Callable]
 
     sims = {}
     for algo_name, scheduler in tqdm(models.items(), desc="Models"):
-        sims[algo_name] = evaluate_model(scheduler, env_type=SingleAgentSimEnv, env_config=configs[algo_name],
+        if isinstance(scheduler, CustomSchedule):
+            env_type = FlattenSimEnv
+        else:
+            env_type = SingleAgentSimEnv
+
+        sims[algo_name] = evaluate_model(scheduler, env_type=env_type, env_config=configs[algo_name],
                                          seed=seed)
 
-    results = {metric_name: [m(s) for s in sims.values()] for metric_name, m in metrics.items()}
+    results = {metric_name: [m(s) for s in sims.values()]
+               for metric_name, m in metrics.items()}
     results_df = pd.DataFrame.from_dict(results)
     results_df["Algorithms"] = sims.keys()
     results_df.set_index("Algorithms", inplace=True)
