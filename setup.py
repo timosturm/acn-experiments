@@ -5,12 +5,12 @@ Setup for gymportal.
 from setuptools import setup, find_packages
 
 setup(
-    name="acn_experiments",
+    name="src",
     version="0.0.1",
     description="Experiments for RL with the ACN Research Portal.",
     packages=find_packages(),
     package_data={
-        "acn_experiments": [
+        "src": [
             "pv/data/*",
         ],
     },
