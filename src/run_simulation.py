@@ -8,7 +8,7 @@ from gymportal.evaluation import *
 import pytorch_lightning
 from tqdm import tqdm
 
-from acn_experiments.utils import CustomSchedule, FlattenSimEnv
+from src.utils import CustomSchedule, FlattenSimEnv
 
 metrics = {
     "SoC >= 90%": percentage_soc,
