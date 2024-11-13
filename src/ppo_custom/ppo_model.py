@@ -167,7 +167,7 @@ class PPO(pl.LightningModule):
 
     def train_batch(
             self,
-    ) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[torch.Tensor]]:
+    ):
         """
         Contains the logic for generating trajectory data to train policy and value network
         Yield:
