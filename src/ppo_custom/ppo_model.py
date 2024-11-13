@@ -165,9 +165,7 @@ class PPO(pl.LightningModule):
 
         return adv
 
-    def train_batch(
-            self,
-    ):
+    def train_batch(self):
         """
         Contains the logic for generating trajectory data to train policy and value network
         Yield:
