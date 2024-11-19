@@ -10,8 +10,8 @@ from gymportal.environment.interfaces import BaseSimInterface
 import pandas as pd
 from icecream import ic
 
-from .utils import pv_to_A
-from .pv import most_recent_P
+from src.pv.utils import pv_to_A
+from src.pv.pv import most_recent_P
 
 
 def pv_utilization(df_pv: pd.DataFrame) -> SimReward:
@@ -51,24 +51,21 @@ def pv_utilization(df_pv: pd.DataFrame) -> SimReward:
             axis=0
         )
 
-        # penalize charging_sum > pvs_in_A
-        diff = np.clip(
-            pvs_in_A - charging_sum, a_min=None, a_max=0
+        utilization_clip = np.clip(charging_sum, a_min=0, a_max=pvs_in_A)
+        utilization_ratio = np.divide(
+            utilization_clip,
+            pvs_in_A,
+            # checking both for 0 prevents floating point errors
+            where=(pvs_in_A != 0) & (utilization_clip != 0),
+            out=np.zeros_like(utilization_clip, dtype=float)
         )
 
-        diff_sum = np.sum(diff)
+        utilization_ratio_mean = np.mean(utilization_ratio)
 
-        utilization = {
-            station_id: 0 for station_id in env.interface.station_ids}
-
-        for idx, station_id in enumerate(env.interface.station_ids):
-            # soft_reward[station_id] = np.sum(
-            # charging_rates[idx, prev_timestep: timestep]) / (env.interface.max_pilot_signal(station_id) * (
-            #     timestep - prev_timestep))
-            utilization[station_id] = diff_sum / (env.interface.max_pilot_signal(station_id)
-                                                  * (timestep_now - timestep_prev))
-
-        return utilization
+        return {
+            station_id: utilization_ratio_mean
+            for station_id in env.interface.station_ids
+        }
 
     def single_reward(env: BaseSimInterface) -> float:
         multi_agent_dict = multi_reward(env)

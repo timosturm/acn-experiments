@@ -14,7 +14,7 @@ import pandas as pd
 
 def pv_utilization_mean(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
     """
-    Measures the mean PV utilization
+    Measures the mean PV utilization in [%]
 
     Args:
         sim:
@@ -22,16 +22,6 @@ def pv_utilization_mean(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
     Returns:
 
     """
-    # timestep_now = env.timestep
-    # timestep_prev = env.prev_timestep
-    # sim: Simulator = env.interface._simulator
-
-    # timesteps = np.array(
-    #     list(
-    #         range(timestep_prev, timestep_now, sim.period)
-    #     )
-    # )
-
     n_timesteps = sim.charging_rates.shape[1]
 
     timesteps_as_dt = [
@@ -43,7 +33,15 @@ def pv_utilization_mean(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
     )
 
     pvs_in_A = [pv_to_A(x, sim.network._voltages) for x in pvs_in_W]
-
     charging_sum = np.sum(sim.charging_rates, axis=0)
-    
-    return np.mean(pvs_in_A - charging_sum)
+
+    utilization_clip = np.clip(charging_sum, a_min=0, a_max=pvs_in_A)
+    utilization_ratio = np.divide(
+        utilization_clip,
+        pvs_in_A,
+        # checking both for 0 prevents floating point errors
+        where=(pvs_in_A != 0) & (utilization_clip != 0),
+        out=np.zeros_like(utilization_clip)
+    )
+
+    return np.mean(utilization_ratio)

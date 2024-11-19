@@ -1,3 +1,4 @@
+from datetime import timedelta
 import numpy as np
 from gymportal.environment.observations.auxilliaries import _single_ev_observation, _multi_ev_observation
 import pandas as pd
@@ -19,8 +20,8 @@ from gymportal.environment.observations.sim_observation import SimObservation, S
 from icecream import ic
 
 
-def pv_observation(df_pv: pd.DataFrame) -> SimObservationFactory:
-    """Observation of the current PV production in [A].
+def pv_observation_mean(df_pv: pd.DataFrame) -> SimObservationFactory:
+    """Observation of the mean PV production in the last 5 hours in [A].
 
     Args:
         df_pv (pd.DataFrame): The dataframe that contains the PV data.
@@ -29,13 +30,21 @@ def pv_observation(df_pv: pd.DataFrame) -> SimObservationFactory:
         SimObservationFactory: The observation object.
     """
 
-    name = "pv_observation"
+    name = "pv_observation_mean"
 
     def single_obs_function(iface: GymTrainedInterface) -> np.ndarray:
-        pv_in_W = most_recent_P(df_pv, iface.current_datetime)
-        pv_in_A = pv_to_A(pv_in_W, iface._simulator.network._voltages)
-        
-        return pv_in_A
+        timesteps_as_dt = [
+            iface.current_datetime - timedelta(hours=h) for h in range(5)
+        ]
+
+        pvs_in_W = np.array(
+            [most_recent_P(df_pv, dt) for dt in timesteps_as_dt]
+        )
+
+        pvs_in_A = [pv_to_A(x, iface._simulator.network._voltages)
+                    for x in pvs_in_W]
+
+        return np.mean(pvs_in_A)
 
     single = SimObservation(
         lambda iface: spaces.Box(low=0, high=np.inf, shape=(1,),

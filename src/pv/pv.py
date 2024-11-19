@@ -1,6 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Callable, Optional
-
 import pandas as pd
 
 
@@ -15,8 +13,7 @@ def read_pv_data(csv: str) -> pd.DataFrame:
         df (pd.DataFrame)
 
     """
-    df = pd.read_csv(csv, skiprows=10, skipfooter=11,
-                     engine="python")  # , parse_dates=["time"], date_format="%Y%m%d:%H%M")
+    df = pd.read_csv(csv, skiprows=10, skipfooter=11, engine="python")
 
     df.time = pd.to_datetime(df.time, format='%Y%m%d:%H%M', exact=True,
                              utc=True).map(lambda x: x.tz_convert("America/Los_Angeles"))
@@ -42,4 +39,3 @@ def most_recent_P(df: pd.DataFrame, current_time: datetime) -> float:
             f"Requested time is out of range [{df.time.min()}, {df.time.max()}]; no data available for current_time={current_time}")
 
     return df.loc[df.time <= current_time].P.values[-1]
-

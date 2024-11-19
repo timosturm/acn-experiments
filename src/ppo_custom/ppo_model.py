@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.optim.optimizer import Optimizer
+from itertools import chain
 
 try:
     import gymnasium as gym
@@ -77,7 +78,7 @@ class PPO(pl.LightningModule):
         self.lam = lam
         self.max_episode_len = max_episode_len
         self.clip_ratio = clip_ratio
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['env'])
 
         # self.env = gym.make(env)
         self.env = env
@@ -281,21 +282,22 @@ class PPO(pl.LightningModule):
         # normalize advantages
         adv = (adv - adv.mean())/adv.std()
 
-        self.log
-        self.log_dict({"avg_ep_len": self.avg_ep_len,
-                 "avg_ep_reward": self.avg_ep_reward, "avg_reward": self.avg_reward})
+        self.log("avg_ep_len", self.avg_ep_len)
+        self.log("avg_ep_reward", self.avg_ep_reward)
+        self.log("avg_reward", self.avg_reward)
 
         loss_actor = self.actor_loss(state, action, old_logp, qval, adv)
         loss_critic = self.critic_loss(state, action, old_logp, qval, adv)
 
-        self.log_dict({"loss_actor": loss_actor, "loss_critic": loss_critic,
-                      "loss_actor + loss_critic": loss_actor + loss_critic})
+        self.log("loss/actor", loss_actor)
+        self.log("loss/critic", loss_critic)
+        self.log("loss/joint", loss_actor + loss_critic)
 
         return loss_actor + loss_critic
 
     def configure_optimizers(self) -> List[Optimizer]:
         """ Initialize Adam optimizer"""
-        return optim.Adam(self.actor.parameters(), lr=self.lr_actor)
+        return optim.Adam(chain(self.actor.parameters(), self.critic.parameters()), lr=self.lr_actor)
 
     def optimizer_step(self, *args, **kwargs):
         """
