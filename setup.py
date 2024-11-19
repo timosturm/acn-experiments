@@ -22,7 +22,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "gymportal @ git+https://git.ies.uni-kassel.de/mhassouna/acnsimulation_gym",
+        "gymportal @ git+https://git.ies.uni-kassel.de/mhassouna/acnsimulation_gym@duration_multiplicator",
         "ray[rllib]==2.10.0",
         "gputil",
         "jupyter",
