@@ -23,13 +23,13 @@ setup(
     ],
     install_requires=[
         "gymportal @ git+https://git.ies.uni-kassel.de/mhassouna/acnsimulation_gym@duration_multiplicator",
-        "ray[rllib]==2.10.0",
+        #"ray[rllib]==2.10.0",
+        #"tensorflow==2.12.0",
+        #"grpcio==1.62.0",
         "gputil",
         "jupyter",
         "tqdm",
-        "grpcio==1.62.0",
         "icecream",
-        "tensorflow==2.12.0",
         "torch",
     ],
 )
