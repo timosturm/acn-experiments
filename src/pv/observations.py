@@ -3,7 +3,7 @@ import numpy as np
 from gymportal.environment.observations.auxilliaries import _single_ev_observation, _multi_ev_observation
 import pandas as pd
 
-from .utils import pv_to_A
+from .utils import W_to_A
 from .pv import most_recent_P
 
 import numpy as np
@@ -41,7 +41,7 @@ def pv_observation_mean(df_pv: pd.DataFrame) -> SimObservationFactory:
             [most_recent_P(df_pv, dt) for dt in timesteps_as_dt]
         )
 
-        pvs_in_A = [pv_to_A(x, iface._simulator.network._voltages)
+        pvs_in_A = [W_to_A(x, iface._simulator.network._voltages)
                     for x in pvs_in_W]
 
         return np.mean(pvs_in_A)
