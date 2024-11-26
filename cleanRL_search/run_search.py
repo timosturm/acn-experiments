@@ -139,6 +139,29 @@ def main(transformer_cap: int, frequency_multiplicator: float, duration_multipli
             df_pv, transformer_cap=transformer_cap),
     ]
 
+    rewards_3 =[
+        charging_reward(),
+    ]
+
+    rewards_2 =[
+        grid_use_penalty(df_pv),
+        charging_reward(),
+    ]
+
+    rewards_1 =[
+        pv_utilization_reward(df_pv),
+        unused_pv_penalty(df_pv),
+        charging_reward(),
+    ]
+
+    rewards_0 = [
+        soft_charging_reward_pv_weighted(
+            df_pv, transformer_cap=transformer_cap),
+    ]
+
+    reward_setting = 0
+    # TODO IF ELSE
+
     # In[ ]:
 
     # import dill as pickle
@@ -157,6 +180,8 @@ def main(transformer_cap: int, frequency_multiplicator: float, duration_multipli
         ic(iter)
         ic(train_generator._current_date)
         iter += 1
+
+    # TODO Save the generator
 
     # In[ ]:
 
