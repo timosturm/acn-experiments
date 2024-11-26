@@ -291,3 +291,33 @@ def ranking_schedule_plus() -> SimActionFactory:
     )
 
     return SimActionFactory(single_sim_action=single, multi_sim_action=multi)
+
+
+def soft_charging_reward_normalized() -> SimReward:
+    """
+    Rewards for charge delivered in the last timestep.
+    """
+
+    def multi_reward(env: BaseSimInterface) -> MultiAgentDict:
+        charging_rates = env.interface.charging_rates
+
+        timestep = env.timestep
+        prev_timestep = env.prev_timestep
+
+        soft_reward = {
+            station_id: 0 for station_id in env.interface.station_ids}
+
+        for idx, station_id in enumerate(env.interface.station_ids):
+            soft_reward[station_id] = np.sum(
+                charging_rates[idx, prev_timestep: timestep]) / (env.interface.max_pilot_signal(station_id) * (
+                    timestep - prev_timestep))
+
+        return soft_reward
+
+    def single_reward(env: BaseSimInterface) -> float:
+        multi_dict = multi_reward(env)
+
+        return float(np.sum(list(multi_dict.values()))) / len(multi_dict.keys())
+
+    return SimReward(single_reward_function=single_reward,
+                     multi_reward_function=multi_reward, name="soft_charging_reward_normalized")

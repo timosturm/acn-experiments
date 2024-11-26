@@ -5,10 +5,10 @@ import pandas as pd
 from gymportal import SingleAgentSimEnv
 from gymportal.environment import single_charging_schedule
 from gymportal.evaluation import *
-import pytorch_lightning
 from tqdm import tqdm
 
-from src.utils import CustomSchedule, FlattenSimEnv
+from src.utils import FlattenSimEnv
+from src.ppo_custom.scheduler import CustomScheduler
 
 metrics = {
     "SoC >= 90%": percentage_soc,
@@ -30,7 +30,7 @@ def run_simulations(models: Dict[str, CanSchedule], metrics: Dict[str, Callable]
 
     sims = {}
     for algo_name, scheduler in tqdm(models.items(), desc="Models"):
-        if isinstance(scheduler, CustomSchedule):
+        if isinstance(scheduler, CustomScheduler):
             env_type = FlattenSimEnv
         else:
             env_type = SingleAgentSimEnv
@@ -40,7 +40,7 @@ def run_simulations(models: Dict[str, CanSchedule], metrics: Dict[str, Callable]
 
     results = {metric_name: [m(s) for s in sims.values()]
                for metric_name, m in metrics.items()}
-    
+
     results_df = pd.DataFrame.from_dict(results)
     results_df["Algorithms"] = sims.keys()
     results_df.set_index("Algorithms", inplace=True)

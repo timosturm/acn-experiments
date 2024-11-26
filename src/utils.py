@@ -1,35 +1,13 @@
-from itertools import chain, tee
-from typing import List
-from gymportal.evaluation import ACNSchedule, RllibSchedule, CanSchedule
-from abc import ABC, abstractmethod
-from typing import Any, Union, Dict
-from ray.rllib.utils.typing import MultiAgentDict
-
-from gymnasium.core import ObsType
-from gymportal.auxilliaries.interfaces import GymTrainedInterface
-import pytorch_lightning as pl
-import torch
+import gymnasium as gym
+from acnportal.acnsim import Simulator
+from itertools import tee
+from typing import Optional
+from gymportal.evaluation import CanSchedule
 
 import gymnasium.spaces as spaces
 from gymnasium.wrappers import FlattenObservation
 from gymportal.environment import SingleAgentSimEnv
 from gymportal.auxilliaries.interfaces_custom import EvaluationGymTrainingInterface
-
-
-class CustomSchedule(CanSchedule):
-    """
-        Implementation of the CanSchedule interface for a pytorch-lightning model.
-    """
-
-    internal: pl.LightningModule
-
-    def __init__(self, algo: pl.LightningModule):
-        self.internal = algo
-
-    def get_action(self, observation: Union[ObsType, MultiAgentDict], iface: GymTrainedInterface):
-        obs = torch.FloatTensor(observation)
-        pi, action = self.internal.actor.forward(obs)
-        return action.numpy()
 
 
 class FlattenSimEnv(FlattenObservation):
@@ -68,3 +46,44 @@ def _pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
+
+
+def evaluate_model(model: CanSchedule, eval_env: gym.Env, seed: Optional[int] = None) -> Simulator:
+    """
+    Evaluates a model / algorithm (either from stable_baselines3 or acnportal) by running a simulation.
+    In the case of stable_baselines3 models, the predictions are made deterministically.
+
+    Args:
+        seed:
+            Optional seed to make evaluations reproducible.
+        env_type:
+            The type of environment to use, either a single- or multi-agent environment.
+        model:
+            The model to produce pilot signals.
+        env_config:
+            Configuration dict containing rewards, actions, observations, and an interface_generating_function.
+            See RebuildingEnvV2Config for details.
+
+    Returns:
+        Simulation after completion.
+    """
+    done = False
+    observation, _ = eval_env.reset(seed=seed)
+
+    while not done:
+
+        iface = eval_env.unwrapped.interface
+        action = model.get_action(observation, iface)
+
+        observation, _, terminated, truncated, _ = eval_env.step(
+            action)
+
+        # if isinstance(eval_env, MultiAgentEnv):
+        #     done = terminated['__all__'] or truncated['__all__']
+        # else:
+        done = terminated or truncated
+
+    # Get the simulator we want to return
+    evaluation_simulation = eval_env.unwrapped.interface._simulator
+
+    return evaluation_simulation
