@@ -10,7 +10,6 @@ import tyro
 from src.pv.rewards import *
 from src.pv.observations import pv_observation_mean
 from gymportal.environment import *
-from itertools import product
 import pytz
 from datetime import datetime, timedelta
 from gymportal.sim import get_charging_network, Recomputer, EvaluationSimulator, SimGenerator
@@ -20,10 +19,16 @@ from gymportal.data.ev_generators import get_standard_generator, RealWorldGenera
 from icecream import ic
 import os
 import sys
+import wandb
 from src.cleanRL import Args
 from gymportal.evaluation import *
 from src.pv.metrics import *
-from src.utils import _pairwise
+from datetime import datetime
+from gymportal.evaluation import ACNSchedule
+from acnportal.algorithms import UncontrolledCharging, SortedSchedulingAlgo, last_come_first_served, \
+    first_come_first_served
+
+
 sys.setrecursionlimit(3000)
 # Print the PID when using nohup
 ic(os.getpid())
@@ -31,7 +36,7 @@ ic(os.getpid())
 
 # In[2]:
 
-def main(transformer_cap: int, frequency_multiplicator: float, duration_multiplicator: float):
+def main(transformer_cap: int, frequency_multiplicator: float, duration_multiplicator: float, reward_cfg: str):
 
     timezone = pytz.timezone("America/Los_Angeles")
 
@@ -130,14 +135,28 @@ def main(transformer_cap: int, frequency_multiplicator: float, duration_multipli
         pv_observation_mean(df_pv),
     ]
 
-    reward_objects = [
-        pv_utilization_reward(df_pv),
-        grid_use_penalty(df_pv),
-        unused_pv_penalty(df_pv),
-        # charging_reward(),
-        soft_charging_reward_pv_weighted(
-            df_pv, transformer_cap=transformer_cap),
-    ]
+    if reward_cfg == "A":
+        reward_objects = [
+            charging_reward(),
+        ]
+    elif reward_cfg == "B":
+        reward_objects = [
+            grid_use_penalty(df_pv),
+            charging_reward(),
+        ]
+    elif reward_cfg == "C":
+        reward_objects = [
+            pv_utilization_reward(df_pv),
+            unused_pv_penalty(df_pv),
+            charging_reward(),
+        ]
+    elif reward_cfg == "D":
+        reward_objects = [
+            soft_charging_reward_pv_weighted(
+                df_pv, transformer_cap=transformer_cap),
+        ]
+    else:
+        raise ValueError(f"reward_cfg={reward_cfg} is not defined!")
 
     # In[ ]:
 
@@ -179,11 +198,12 @@ def main(transformer_cap: int, frequency_multiplicator: float, duration_multipli
     # In[ ]:
 
     args = Args(
-        exp_name=f"search_cap={transformer_cap}_f={frequency_multiplicator}_d={duration_multiplicator}",
+        exp_name=f"search_cap={transformer_cap}_f={frequency_multiplicator}_d={duration_multiplicator}_r={reward_cfg}",
         total_timesteps=steps_per_epoch * 12,
         num_steps=steps_per_epoch,
         num_envs=1,
         ent_coef=1e-4,
+        seed=train_generator.seed,
         # wandb:
         track=True,
         wandb_project_name="cleanRL_test",
@@ -213,32 +233,24 @@ def main(transformer_cap: int, frequency_multiplicator: float, duration_multipli
 
     train_ppo(args, make_env)
 
-    # In[ ]:
+    from src.cleanRL.utils import get_model_path, log_evaluation_plot, log_model, load_agent, log_metrics_table
 
-    from gymportal.evaluation import ACNSchedule
-    from acnportal.algorithms import UncontrolledCharging, SortedSchedulingAlgo, last_come_first_served, \
-        first_come_first_served
+    model_path = get_model_path(args)
+    log_model(wandb.run, model_path)
+    agent = load_agent(args, model_path)
+
+    from src.cleanRL.scheduler import CleanRLSchedule
+    ppo_scheduler = CleanRLSchedule(agent)
 
     models = {
+        "PPO": ppo_scheduler,
         "FCFS": ACNSchedule(SortedSchedulingAlgo(first_come_first_served)),
         "LCFS": ACNSchedule(SortedSchedulingAlgo(last_come_first_served)),
         "Uncontrolled": ACNSchedule(UncontrolledCharging()),
     }
 
-    models
-
-    # In[ ]:
-
-    from src.run_simulation import run_simulations
-
-    df = run_simulations(models, metrics=args.eval_metrics,
-                         config=args.eval_config, seed=args.eval_config["simgenerator"].seed)
-
-    df
-
-    # In[ ]:
-
-    df.to_csv(f"{args.exp_name}.csv")
+    log_metrics_table(models, args, wandb.run)
+    log_evaluation_plot(agent, args, wandb.run)
 
 
 tyro.cli(main)
