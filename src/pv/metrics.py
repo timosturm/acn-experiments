@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from acnportal.acnsim.analysis import *
 
 from gymportal.sim.simulators_custom import EvaluationSimulator
 
@@ -9,8 +8,7 @@ from .pv import most_recent_P
 import pandas as pd
 
 from datetime import timedelta
-
-from acnportal.acnsim.analysis import *
+import numpy as np
 
 from gymportal.sim.simulators_custom import EvaluationSimulator
 

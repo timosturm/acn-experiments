@@ -57,7 +57,7 @@ class EvaluationFigureCallback(Callback):
             n_intervals=1,
             start_date=timezone.localize(datetime(2019, 9, 23)),
             ev_generator=ev_generator,
-            recomputer=Recomputer(recompute_interval=3, sparse=True),
+            recomputer=Recomputer(recompute_interval=10, sparse=True),
             sim_class=EvaluationSimulator,
         )
 
