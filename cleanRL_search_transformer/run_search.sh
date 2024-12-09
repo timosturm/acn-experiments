@@ -16,9 +16,9 @@
 #     done
 # done
 
-for ent_coef in 0.001 0.0001 0.00001
+for ent_coef in 0.001 0.00001
 do
-    for learning_rate in 0.001 0.0001 0.00001 0.000001
+    for learning_rate in 0.0001 0.00001
     do
         for transformer_cap in 80 100 200
         do

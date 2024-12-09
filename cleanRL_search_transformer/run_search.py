@@ -204,7 +204,7 @@ def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: 
         exp_name=f"search_cap={transformer_cap}_r={reward_cfg}_ent_coef={ent_coef}_learning_rate={learning_rate}",
         total_timesteps=steps_per_epoch * 120,
         num_steps=steps_per_epoch,
-        num_envs=46,
+        num_envs=12,
         ent_coef=ent_coef,
         learning_rate=learning_rate,
         seed=train_generator.seed,
