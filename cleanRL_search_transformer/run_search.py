@@ -241,7 +241,7 @@ def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: 
     from src.cleanRL import train_ppo
     from src.cleanRL.environment import make_env_reset
 
-    train_ppo(args, make_env_reset)
+    train_ppo(args, make_env_reset, async_envs=True)
 
     from src.cleanRL.utils import get_model_path, log_evaluation_plot, log_model, load_agent, log_metrics_table
 
