@@ -1,6 +1,7 @@
 # this sub-module contains auxilliary functions and classes for use with cleanRL's PPO
 
 from copy import deepcopy
+import glob
 from typing import Callable, Dict, Optional
 
 from .scheduler import CleanRLSchedule
@@ -17,12 +18,14 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
+from icecream import ic
 # import tyro
 
 
 def train_ppo(
     args: Args,
     make_env: Callable[[Dict, float, Optional[int]], Callable[[], gym.Env]],
+    async_envs: bool = False,
 ):
     # args = tyro.cli(Args)
 
@@ -43,6 +46,7 @@ def train_ppo(
             monitor_gym=True,
             save_code=True,
             group=args.wandb_group,
+            tags=args.wandb_tags,
         )
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
@@ -61,9 +65,12 @@ def train_ppo(
                           and args.cuda else "cpu")
 
     # env setup
-    envs = gym.vector.SyncVectorEnv(
-        [make_env(args.train_config, args.gamma) for i in range(args.num_envs)]
+    env_type = gym.vector.AsyncVectorEnv if async_envs else gym.vector.SyncVectorEnv
+    envs = env_type(
+        [make_env(args.train_config, args.gamma, i)
+         for i in range(args.num_envs)]
     )
+
     assert isinstance(envs.single_action_space,
                       gym.spaces.Box), "only continuous action space is supported"
 
@@ -124,6 +131,18 @@ def train_ppo(
                                           info["episode"]["r"], global_step)
                         writer.add_scalar("charts/episodic_length",
                                           info["episode"]["l"], global_step)
+            
+            # log metrics for training
+            if torch.any(next_done):
+                sims = []
+                for info in infos["final_info"]:
+                    if info and "acn_interface" in info:
+                        sims.append(info["acn_interface"]._simulator)
+                        
+                for metric_name, f in args.eval_metrics.items():
+                    value = np.mean([f(sim) for sim in sims])
+                    writer.add_scalar(f"train/{metric_name}", value, global_step)
+                        
 
         # bootstrap value if not done
         with torch.no_grad():
@@ -235,7 +254,7 @@ def train_ppo(
         # Custom evaluation:
         if not args.eval_env:
             args.eval_env = make_env(
-                args.eval_config, args.gamma, seed=args.eval_seed)()
+                args.eval_config, args.gamma, i=0, seed=args.eval_seed)()
 
         scheduler = CleanRLSchedule(deepcopy(agent))
         sim = evaluate_model(scheduler, args.eval_env,
@@ -244,23 +263,9 @@ def train_ppo(
         for metric_name, f in args.eval_metrics.items():
             writer.add_scalar(f"eval/{metric_name}", f(sim), global_step)
 
-    if args.save_model:
-        model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
-        torch.save(agent.state_dict(), model_path)
-        print(f"model saved to {model_path}")
-        # from src.cleanRL.ppo_eval import evaluate
-        #
-        # episodic_returns = evaluate(
-        #     model_path,
-        #     make_env,
-        #     eval_episodes=10,
-        #     run_name=f"{run_name}-eval",
-        #     Model=Agent,
-        #     device=device,
-        #     gamma=args.gamma,
-        # )
-        # for idx, episodic_return in enumerate(episodic_returns):
-        #     writer.add_scalar("eval/episodic_return", episodic_return, idx)
+        if args.save_model:
+            model_path = f"runs/{run_name}/{args.exp_name}_{iteration}.mdl"
+            torch.save(agent.state_dict(), model_path)
 
     envs.close()
     writer.close()
