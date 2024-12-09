@@ -212,7 +212,7 @@ def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: 
         track=True,
         wandb_project_name="cleanRL_test",
         wandb_entity="tsturm-university-kassel",
-        wandb_group="search",
+        wandb_group="real-world",
         wandb_tags=[
             f"cap={transformer_cap}",
             f"r={reward_cfg}",
