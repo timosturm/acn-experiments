@@ -10,4 +10,4 @@
 
 date;hostname;pwd
 
-srun python run_search.py --transformer-cap $1 --frequency-multiplicator $2 --duration-multiplicator $3 --reward-cfg $4 --ent_coef $5 --learning_rate $6
+srun python run_search.py --transformer-cap $1 --reward-cfg $2 --ent-coef $3 --learning-rate $4
