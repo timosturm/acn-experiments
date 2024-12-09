@@ -36,7 +36,7 @@ ic(os.getpid())
 
 # In[2]:
 
-def main(transformer_cap: int, reward_cfg: str):
+def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: float):
 
     timezone = pytz.timezone("America/Los_Angeles")
 
@@ -201,17 +201,24 @@ def main(transformer_cap: int, reward_cfg: str):
     # In[ ]:
 
     args = Args(
-        exp_name=f"search_cap={transformer_cap}_r={reward_cfg}",
-        total_timesteps=steps_per_epoch * 24,
+        exp_name=f"search_cap={transformer_cap}_r={reward_cfg}_ent_coef={ent_coef}_learning_rate={learning_rate}",
+        total_timesteps=steps_per_epoch * 120,
         num_steps=steps_per_epoch,
-        num_envs=1,
-        ent_coef=1e-4,
+        num_envs=46,
+        ent_coef=ent_coef,
+        learning_rate=learning_rate,
         seed=train_generator.seed,
         # wandb:
         track=True,
         wandb_project_name="cleanRL_test",
         wandb_entity="tsturm-university-kassel",
-        wandb_group="transformer",
+        wandb_group="search",
+        wandb_tags=[
+            f"cap={transformer_cap}",
+            f"r={reward_cfg}",
+            f"ent_coef={ent_coef}",
+            f"learning_rate={learning_rate}",
+        ],
         save_model=True,
         # my own stuff:
         train_config=train_config,
@@ -256,4 +263,5 @@ def main(transformer_cap: int, reward_cfg: str):
     log_evaluation_plot(agent, args, wandb.run)
 
 
-tyro.cli(main)
+if __name__ == "__main__":
+    tyro.cli(main)
