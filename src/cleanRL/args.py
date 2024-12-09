@@ -1,5 +1,6 @@
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/ppo/#ppo_continuous_actionpy
 from dataclasses import dataclass
+from typing import List
 
 import gymnasium as gym
 
@@ -21,6 +22,7 @@ class Args:
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
     wandb_group: str = None
+    wandb_tags: List = [],
     capture_video: bool = False
     """whether to capture videos of the agent performances (check out `videos` folder)"""
     save_model: bool = False

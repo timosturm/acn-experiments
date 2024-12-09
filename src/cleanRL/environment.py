@@ -4,10 +4,17 @@ import numpy as np
 from gymportal.environment import SingleAgentSimEnv
 
 
-def make_env(config, gamma, seed: int = None):
+def make_env(config, gamma, _: int, seed: int = None):
+    return make_env_reset(config, gamma, 0, seed)
+
+
+def make_env_reset(config, gamma, i: int, seed: int = None):
     def thunk():
         env = SingleAgentSimEnv(deepcopy(config))
         env.reset(seed=seed if seed else env.simgenerator.seed)
+
+        for _ in range(i):
+            env.reset()
 
         env = gym.wrappers.FlattenObservation(env)
         env = gym.wrappers.RecordEpisodeStatistics(env)
