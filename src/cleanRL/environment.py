@@ -4,7 +4,7 @@ import numpy as np
 from gymportal.environment import SingleAgentSimEnv
 
 
-def make_env(config, gamma, _: int, seed: int = None):
+def make_env(config, gamma, i: int, seed: int = None):
     return make_env_reset(config, gamma, 0, seed)
 
 
