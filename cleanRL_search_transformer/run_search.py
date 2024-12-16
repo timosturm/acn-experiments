@@ -202,7 +202,7 @@ def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: 
 
     args = Args(
         exp_name=f"search_cap={transformer_cap}_r={reward_cfg}_ent_coef={ent_coef}_learning_rate={learning_rate}_num_envs={num_envs}",
-        total_timesteps=steps_per_epoch * 120,
+        total_timesteps=steps_per_epoch * 30,
         num_steps=steps_per_epoch,
         num_envs=num_envs,
         ent_coef=ent_coef,
