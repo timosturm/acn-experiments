@@ -218,7 +218,7 @@ def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: 
             f"r={reward_cfg}",
             f"ent_coef={ent_coef}",
             f"learning_rate={learning_rate}",
-            f"num_envs"= {num_envs}
+            f"num_envs= {num_envs}",
         ],
         save_model=True,
         # my own stuff:
