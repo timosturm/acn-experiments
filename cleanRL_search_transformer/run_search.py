@@ -36,7 +36,7 @@ ic(os.getpid())
 
 # In[2]:
 
-def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: float):
+def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: float, num_envs: int = 1):
 
     timezone = pytz.timezone("America/Los_Angeles")
 
@@ -201,10 +201,10 @@ def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: 
     # In[ ]:
 
     args = Args(
-        exp_name=f"search_cap={transformer_cap}_r={reward_cfg}_ent_coef={ent_coef}_learning_rate={learning_rate}",
+        exp_name=f"search_cap={transformer_cap}_r={reward_cfg}_ent_coef={ent_coef}_learning_rate={learning_rate}_num_envs={num_envs}",
         total_timesteps=steps_per_epoch * 120,
         num_steps=steps_per_epoch,
-        num_envs=12,
+        num_envs=num_envs,
         ent_coef=ent_coef,
         learning_rate=learning_rate,
         seed=train_generator.seed,
@@ -218,6 +218,7 @@ def main(transformer_cap: int, reward_cfg: str, ent_coef: float, learning_rate: 
             f"r={reward_cfg}",
             f"ent_coef={ent_coef}",
             f"learning_rate={learning_rate}",
+            f"num_envs"= {num_envs}
         ],
         save_model=True,
         # my own stuff:
