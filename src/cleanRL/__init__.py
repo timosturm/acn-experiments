@@ -74,7 +74,11 @@ def train_ppo(
     assert isinstance(envs.single_action_space,
                       gym.spaces.Box), "only continuous action space is supported"
 
-    agent = Agent(envs).to(device)
+    agent = Agent(
+        observation_shape=np.array(envs.single_observation_space.shape).prod(),
+        action_shape=np.array(envs.single_action_space.shape).prod()
+    ).to(device)
+    
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 
     # ALGO Logic: Storage setup
@@ -131,18 +135,18 @@ def train_ppo(
                                           info["episode"]["r"], global_step)
                         writer.add_scalar("charts/episodic_length",
                                           info["episode"]["l"], global_step)
-            
+
             # log metrics for training
             if torch.any(next_done):
                 sims = []
                 for info in infos["final_info"]:
                     if info and "acn_interface" in info:
                         sims.append(info["acn_interface"]._simulator)
-                        
+
                 for metric_name, f in args.eval_metrics.items():
                     value = np.mean([f(sim) for sim in sims])
-                    writer.add_scalar(f"train/{metric_name}", value, global_step)
-                        
+                    writer.add_scalar(
+                        f"train/{metric_name}", value, global_step)
 
         # bootstrap value if not done
         with torch.no_grad():
@@ -269,3 +273,5 @@ def train_ppo(
 
     envs.close()
     writer.close()
+    
+    return model_path

@@ -5,40 +5,40 @@ from torch.distributions.normal import Normal
 
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
-    torch.nn.init.orthogonal_(layer.weight, std)
+    torch.nn.init.orthogonal_(layer.weight)  # , std)
     torch.nn.init.constant_(layer.bias, bias_const)
     return layer
 
 
 class Agent(nn.Module):
-    def __init__(self, envs):
+    def __init__(self, observation_shape: int, action_shape: int):
         super().__init__()
+
+        # np.array(envs.single_observation_space.shape).prod()
 
         self.critic = nn.Sequential(
             layer_init(
-                nn.Linear(np.array(envs.single_observation_space.shape).prod(), 128)),
+                nn.Linear(observation_shape, 128)),
             nn.Tanh(),
             layer_init(nn.Linear(128, 128)),
             nn.Tanh(),
             layer_init(nn.Linear(128, 64)),
             nn.Tanh(),
-            layer_init(nn.Linear(64, 1), std=1.0),
+            layer_init(nn.Linear(64, 1))  # , std=1.0),
         )
 
         self.actor_mean = nn.Sequential(
             layer_init(
-                nn.Linear(np.array(envs.single_observation_space.shape).prod(), 128)),
+                nn.Linear(observation_shape, 128)),
             nn.Tanh(),
             layer_init(nn.Linear(128, 128)),
             nn.Tanh(),
             layer_init(nn.Linear(128, 64)),
             nn.Tanh(),
-            layer_init(nn.Linear(64, np.prod(
-                envs.single_action_space.shape)), std=0.01),
+            layer_init(nn.Linear(64, action_shape))  # , std=0.01)),
         )
 
-        self.actor_logstd = nn.Parameter(torch.zeros(
-            1, np.prod(envs.single_action_space.shape)))
+        self.actor_logstd = nn.Parameter(torch.zeros(1, action_shape))
 
     def get_value(self, x):
         return self.critic(x)
