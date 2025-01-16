@@ -46,7 +46,11 @@ def pv_utilization_reward(df_pv: pd.DataFrame) -> SimReward:
     """
 
     def multi_reward(env: BaseSimInterface) -> MultiAgentDict:
-        raise NotImplementedError()
+        value = single_reward(env)
+
+        return {
+            station_id: value for station_id in env.interface.station_ids
+        }
 
     def single_reward(env: BaseSimInterface) -> float:
         energy_total = _energy_total(env)
@@ -64,7 +68,11 @@ def grid_use_penalty(df_pv: pd.DataFrame) -> SimReward:
     """
 
     def multi_reward(env: BaseSimInterface) -> MultiAgentDict:
-        raise NotImplementedError()
+        value = single_reward(env)
+
+        return {
+            station_id: value for station_id in env.interface.station_ids
+        }
 
     def single_reward(env: BaseSimInterface) -> float:
         energy_total = _energy_total(env)
@@ -82,7 +90,11 @@ def unused_pv_penalty(df_pv: pd.DataFrame) -> SimReward:
     """
 
     def multi_reward(env: BaseSimInterface) -> MultiAgentDict:
-        raise NotImplementedError()
+        value = single_reward(env)
+
+        return {
+            station_id: value for station_id in env.interface.station_ids
+        }
 
     def single_reward(env: BaseSimInterface) -> float:
         energy_total = _energy_total(env)
@@ -100,7 +112,11 @@ def charging_reward() -> SimReward:
     """
 
     def multi_reward(env: BaseSimInterface) -> MultiAgentDict:
-        raise NotImplementedError()
+        # Fully colaborative reward
+        value = single_reward(env)
+        return {
+            station_id: value for station_id in env.interface.station_ids
+        }
 
     def single_reward(env: BaseSimInterface) -> float:
         energy_total = _energy_total(env)
@@ -108,9 +124,10 @@ def charging_reward() -> SimReward:
         sim: EvaluationSimulator = env.interface._simulator
         last_max_powers = sim.maximum_charging_power[:, env.timestep - 1]
         assert last_max_powers.shape == (len(env.interface.station_ids),)
+        was_active = last_max_powers != 0
 
         station_dict = {station_id: is_active
-                        for station_id, is_active in zip(env.interface.station_ids, last_max_powers != 0)}
+                        for station_id, is_active in zip(env.interface.station_ids, was_active)}
 
         max_pilots_sum = np.sum(
             [

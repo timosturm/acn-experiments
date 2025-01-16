@@ -92,11 +92,16 @@ def log_evaluation_plot(agent, args, run):
 
 
 def load_agent(args: Args, path):
-    agent = Agent(envs=gym.vector.SyncVectorEnv(
+    envs = gym.vector.SyncVectorEnv(
         [
-            make_env(args.eval_config, args.gamma)
+            make_env(args.eval_config, args.gamma, 0)
         ]
-    ))
+    )
+
+    agent = Agent(
+        observation_shape=np.array(envs.single_observation_space.shape).prod(),
+        action_shape=np.array(envs.single_action_space.shape).prod()
+    )
 
     agent.load_state_dict(torch.load(path, weights_only=True))
 
