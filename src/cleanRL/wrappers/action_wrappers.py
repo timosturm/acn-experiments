@@ -2,7 +2,7 @@
 import numpy as np
 
 import gymnasium as gym
-from gymnasium.spaces import Box
+import gymnasium.spaces as spaces
 
 
 class MARLClipAction(gym.ActionWrapper, gym.utils.RecordConstructorArgs):
@@ -26,7 +26,7 @@ class MARLClipAction(gym.ActionWrapper, gym.utils.RecordConstructorArgs):
         Args:
             env: The environment to apply the wrapper
         """
-        assert isinstance(env.action_space, Box)
+        assert isinstance(env.action_space, spaces.Dict)
 
         gym.utils.RecordConstructorArgs.__init__(self)
         gym.ActionWrapper.__init__(self, env)

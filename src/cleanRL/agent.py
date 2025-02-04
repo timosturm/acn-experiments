@@ -47,7 +47,16 @@ class Agent(nn.Module):
         action_mean = self.actor_mean(x)
         action_logstd = self.actor_logstd.expand_as(action_mean)
         action_std = torch.exp(action_logstd)
+
         probs = Normal(action_mean, action_std)
+        # if action is None:
+        #   action = probs.sample()
+
+        # reparametrisation trick; see https://arxiv.org/abs/1312.6114, Section 2.4
+        # such that the action is part of the computation graph when use in loss calculation
         if action is None:
-            action = probs.sample()
+            epsilon = Normal(torch.zeros_like(action_mean),
+                             torch.ones_like(action_mean)).sample()
+            action = action_mean + action_std * epsilon
+
         return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), self.critic(x)

@@ -90,22 +90,16 @@ class MARLNormalizeReward(gym.core.Wrapper, gym.utils.RecordConstructorArgs):
         obs, rews, terminateds, truncateds, infos = self.env.step(action)
         # if not self.is_vector_env:
         # rews = np.array([rews])
-        
-        ic(rews)
+
         assert isinstance(rews, dict), f"expected dict, got {type(rews)}"
 
-        ic(self.returns)
-        ic(terminateds)
-        
         self.returns = {
-            self.returns[agent_id] * self.gamma *
+            agent_id: self.returns[agent_id] * self.gamma *
             (1 - terminateds[agent_id]) + rews[agent_id]
             for agent_id in self.get_agent_ids()
         }
 
         rews = self.normalize(rews)
-
-        ic(rews)
 
         # if not self.is_vector_env:
         #     rews = rews[0]

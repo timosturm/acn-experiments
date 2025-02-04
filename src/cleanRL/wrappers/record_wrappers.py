@@ -104,8 +104,7 @@ class MARLRecordEpisodeStatistics(gym.Wrapper, gym.utils.RecordConstructorArgs):
 
         self.episode_lengths += 1
 
-        dones = np.logical_or([t["__all__"] for t in terminations],
-                              [t["__all__"] for t in truncations])
+        dones = np.logical_or(terminations["__all__"], truncations["__all__"])
         num_dones = np.sum(dones)
 
         if num_dones:

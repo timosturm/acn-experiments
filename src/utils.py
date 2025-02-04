@@ -69,14 +69,17 @@ def evaluate_model(model: CanSchedule, eval_env: gym.Env, seed: Optional[int] = 
     """
     done = False
     observation, _ = eval_env.reset(seed=seed)
+    agg_reward = 0
 
     while not done:
 
         iface = eval_env.unwrapped.interface
         action = model.get_action(observation, iface)
 
-        observation, _, terminated, truncated, _ = eval_env.step(
+        observation, rew, terminated, truncated, _ = eval_env.step(
             action)
+        
+        agg_reward += rew
 
         # if isinstance(eval_env, MultiAgentEnv):
         #     done = terminated['__all__'] or truncated['__all__']
@@ -86,4 +89,4 @@ def evaluate_model(model: CanSchedule, eval_env: gym.Env, seed: Optional[int] = 
     # Get the simulator we want to return
     evaluation_simulation = eval_env.unwrapped.interface._simulator
 
-    return evaluation_simulation
+    return evaluation_simulation, agg_reward
