@@ -632,8 +632,8 @@ args = MyArgs(
     seed=42,  # TODO
     imitation=ImitationArgs(
         # TODO Store baseline as a parameter
-        train_ds="FCFS_gen-_training.parquet.gzip",
-        validation_ds="FCFS_gen-_validation.parquet.gzip",
+        train_ds="FCFS_gen_training.parquet.gzip",
+        validation_ds="FCFS_gen_validation.parquet.gzip",
     ),
     eval=EvalArgs(
         make_env=lambda: make_env(validation_config, 0.99, 0, 930932)(),
