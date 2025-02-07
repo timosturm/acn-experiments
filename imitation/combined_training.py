@@ -640,7 +640,7 @@ args = MyArgs(
         metrics=metrics,
     ),
     rl=RLArgs(
-        total_timesteps=steps_per_epoch * 1,
+        total_timesteps=steps_per_epoch * 20,
         config=train_config,
         metrics=metrics,
     ),
