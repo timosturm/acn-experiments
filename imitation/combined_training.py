@@ -203,6 +203,7 @@ def train_ppo(
             lrnow = frac * args.lr
             optimizer.param_groups[0]["lr"] = lrnow
 
+        # collect trajectories
         for step in range(0, args.num_steps):
             global_step += args.num_envs
             obs[step] = next_obs
@@ -365,7 +366,7 @@ def objective(
     args.imitation.lr = trial.suggest_float(
         "lr_imitation", 1e-5, 1e-2, log=True)
     args.imitation.n_epochs = trial.suggest_categorical(
-        "n_epochs_imitaiton", [5, 10, 20, 30, 40])
+        "n_epochs_imitation", [5, 10, 20, 30, 40])
 
     args.rl.lr = trial.suggest_float(
         "lr_rl", 3e-5, 3e-3, log=True)
@@ -375,6 +376,7 @@ def objective(
     args.rl.max_grad_norm = trial.suggest_float("max_grad_norm_rl", 0.3, 0.7)
     args.rl.vf_coef = trial.suggest_float("vf_coef_rl", 0, 1)
     args.rl.clip_coef = trial.suggest_float("clip_coef_rl", 0, 1)
+    args.rl.num_steps = trial.suggest_float("num_steps / batch_size", 128, 2048, log=True)
 
     args.rl.batch_size = int(args.rl.num_envs * args.rl.num_steps)
     args.rl.minibatch_size = int(args.rl.batch_size // args.rl.num_minibatches)
@@ -500,14 +502,14 @@ ic(os.getpid())
 timezone = pytz.timezone("America/Los_Angeles")
 
 
-charging_network = get_charging_network('simple_acn', basic_evse=True, voltage=208,
-                                        network_kwargs={
-                                            'station_ids': ['CA-504', 'CA-503', 'CA-502', 'CA-501'],
-                                            # 'station_ids': ['CA-501'],
-                                            "aggregate_cap": 32 * 208 / 1000})
+# charging_network = get_charging_network('simple_acn', basic_evse=True, voltage=208,
+#                                         network_kwargs={
+#                                             'station_ids': ['CA-504', 'CA-503', 'CA-502', 'CA-501'],
+#                                             # 'station_ids': ['CA-501'],
+#                                             "aggregate_cap": 32 * 208 / 1000})
 
-# charging_network = get_charging_network('caltech', basic_evse=True, voltage=208,
-#                                         network_kwargs={"transformer_cap": 150})
+charging_network = get_charging_network('caltech', basic_evse=True, voltage=208,
+                                        network_kwargs={"transformer_cap": 150})
 
 battery_generator = CustomizableBatteryGenerator(
     voltage=208,
@@ -527,8 +529,8 @@ ev_generator = get_standard_generator(
 
 train_generator = SimGenerator(
     charging_network=charging_network,
-    simulation_days=7,
-    n_intervals=46,
+    simulation_days=1,
+    n_intervals=7 * 46,
     start_date=timezone.localize(datetime(2019, 1, 1)),
     ev_generator=ev_generator,
     recomputer=Recomputer(recompute_interval=10, sparse=True),
