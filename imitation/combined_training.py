@@ -141,7 +141,7 @@ def imitate(
         for step, x in enumerate(train_loader):
             action, _, _, _ = agent.get_action_and_value(x["observation"].to(device))
 
-            loss = criterion(action, x["action"])
+            loss = criterion(action, x["action"].to(device))
             writer.add_scalar("imitation/train_loss", loss.item(), epoch)
 
             if step % 100 == 0:
