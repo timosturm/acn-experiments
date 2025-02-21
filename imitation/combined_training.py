@@ -127,8 +127,8 @@ def imitate(
         true_actions = []
 
         for x in validation_loader:
-            action, log_prob, entropy, value = agent.get_action_and_value(
-                x["observation"])
+            action, _, _, _ = agent.get_action_and_value(
+                x["observation"].to(device))
 
             actions.append(action)
             true_actions.append(x["action"])
@@ -139,7 +139,7 @@ def imitate(
 
     for epoch in range(args.n_epochs):
         for step, x in enumerate(train_loader):
-            action, _, _, _ = agent.get_action_and_value(x["observation"])
+            action, _, _, _ = agent.get_action_and_value(x["observation"].to(device))
 
             loss = criterion(action, x["action"])
             writer.add_scalar("imitation/train_loss", loss.item(), epoch)
