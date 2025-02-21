@@ -131,7 +131,7 @@ def imitate(
                 x["observation"].to(device))
 
             actions.append(action)
-            true_actions.append(x["action"])
+            true_actions.append(x["action"].to(device))
 
         loss = criterion(torch.vstack(actions), torch.vstack(true_actions))
 
