@@ -1,5 +1,6 @@
 from optuna.pruners import MedianPruner
 from src.cleanRL.environment import make_env
+from src.observations import minute_observation_stay
 from src.pv.metrics import *
 from gymportal.evaluation import *
 from src.pv.rewards import *
@@ -103,7 +104,7 @@ observation_objects = [
     cyclical_minute_observation(),
     cyclical_day_observation(),
     cyclical_month_observation(),
-    cyclical_minute_observation_stay(),
+    minute_observation_stay(),
     energy_delivered_observation_normalized(),
     num_active_stations_observation_normalized(),
     pilot_signals_observation_normalized(),
