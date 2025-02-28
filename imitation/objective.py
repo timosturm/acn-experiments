@@ -41,7 +41,7 @@ def objective(
     args.rl.max_grad_norm = trial.suggest_float("max_grad_norm_rl", 0.3, 0.7)
     args.rl.vf_coef = trial.suggest_float("vf_coef_rl", 0, 1)
     args.rl.clip_coef = trial.suggest_float("clip_coef_rl", 0, 1)
-    args.rl.num_steps = trial.suggest_float(
+    args.rl.num_steps = trial.suggest_int(
         "num_steps / batch_size", 128, 2048, log=True)
 
     args.rl.batch_size = int(args.rl.num_envs * args.rl.num_steps)
