@@ -18,7 +18,8 @@ import os
 import optuna
 from icecream import ic
 from src.imitation.args import MyArgs, ImitationArgs, RLArgs, EvalArgs
-from objective import objective
+from objective import objective_combined
+from src.utils import get_generator
 
 
 # This is importent when we want to call this as a python script, because jupyter naturally has a higher recursion depth
@@ -49,8 +50,14 @@ battery_generator = CustomizableBatteryGenerator(
 )
 
 # ev_generator = RealWorldGenerator(battery_generator=battery_generator, site='caltech', period=1)
-ev_generator = get_standard_generator(
-    'caltech', battery_generator, seed=42, frequency_multiplicator=10, duration_multiplicator=2)
+ev_generator = get_generator(
+    'caltech',
+    "triple_gmm+sc.pkl",
+    battery_generator,
+    seed=42,
+    frequency_multiplicator=10,
+    duration_multiplicator=2
+)
 
 # TODO Use time intervals and GMMs from https://github.com/chrisyeh96/sustaingym/blob/main/sustaingym/envs/evcharging/utils.py
 # I.e., train on generated data, evaluate on new generated data and real data from the same interval
@@ -191,7 +198,7 @@ if __name__ == "__main__":
     )
 
     def objective_wrapper(trial):
-        return objective(
+        return objective_combined(
             trial,
             args,
             make_env,

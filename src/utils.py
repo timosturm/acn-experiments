@@ -1,3 +1,9 @@
+from datetime import datetime
+from sklearn.mixture import BayesianGaussianMixture
+import pytz
+from gymportal.auxilliaries.file_utils import get_persistent_folder
+from gymportal.data.ev_generators import SklearnGenerator, get_data, extract_training_data
+import pickle
 import numpy as np
 from sklearn.base import TransformerMixin, BaseEstimator
 import gymnasium as gym
@@ -111,3 +117,104 @@ class ManualMaxScaler(BaseEstimator, TransformerMixin):
 
     def inverse_transform(self, X_scaled):
         return X_scaled * self.max_values  # Multiply back by max values
+
+
+class ScalableSklearnGenerator(SklearnGenerator):
+
+    def __init__(
+        self,
+        period,
+        battery_generator,
+        model,
+        scaler,
+        frequencies_per_hour,
+        duration_multiplicator=1,
+        arrival_min=0,
+        arrival_max=24,
+        duration_min=0.0833,
+        duration_max=48,
+        energy_min=0.5,
+        energy_max=150,
+        seed=None
+    ):
+        super().__init__(
+            period,
+            battery_generator,
+            model,
+            frequencies_per_hour,
+            duration_multiplicator,
+            arrival_min, arrival_max,
+            duration_min, duration_max,
+            energy_min,
+            energy_max,
+            seed
+        )
+
+        self.scaler = scaler
+
+    def _sample(self, n_samples: int):
+        """ Generate random samples from the fitted model.
+
+        Args:
+            n_samples (int): Number of samples to generate.
+
+        Returns:
+            np.ndarray: shape (n_samples, 3), randomly generated samples. Column 1 is
+                the arrival time in hours since midnight, column 2 is the session duration in hours,
+                and column 3 is the energy demand in kWh.
+        """
+        if n_samples > 0:
+            ev_matrix, _ = self.sklearn_model.sample(n_samples)
+            ev_matrix = self.scaler.inverse_transform(ev_matrix)
+            return self._clip_samples(ev_matrix)
+        else:
+            return np.array([])
+
+
+def get_generator(site, model_path: str, battery_generator, token: Optional[str] = None, seed: Optional[int] = None,
+                  frequency_multiplicator=10, duration_multiplicator=1):
+    """
+
+    Args:
+        site: The site which is used as a data source for the generative model.
+        battery_generator: The generator for EV batteries.
+        token: The token to access acn-data.
+        seed: A seed for random number generator
+        frequency_multiplicator: A multiplicator for the arrival frequencies of EVs, e.g., a higher value makes it
+            more likely for an EV to arrive at a given point in time.
+
+    Returns:
+
+    """
+    timezone = pytz.timezone('America/Los_Angeles')
+    data = get_data(
+        site,
+        token,
+        drop_columns=(),
+        start=datetime(2018, 3, 25, tzinfo=timezone),
+        end=datetime(2020, 5, 31, tzinfo=timezone)
+    )
+    X = extract_training_data(data)
+
+    try:
+        with open(model_path, "rb") as f:
+            gmm, scaler = pickle.load(f)
+    except FileNotFoundError:
+        print(f"No existing GMM found for site={site}!")
+
+    connection_time = X[:, 0]
+
+    frequencies, _ = np.histogram(connection_time, bins=range(0, 25, 1))
+    frequencies = np.array(frequencies) / np.sum(frequencies)
+
+    generator = ScalableSklearnGenerator(
+        period=1,
+        model=gmm,
+        scaler=scaler,
+        frequencies_per_hour=frequencies * frequency_multiplicator,
+        battery_generator=battery_generator,
+        duration_multiplicator=duration_multiplicator,
+        seed=seed
+    )
+
+    return generator
