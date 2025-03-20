@@ -43,7 +43,8 @@ def imitate(
 
     agent = Agent(
         observation_shape=np.prod(train_ds[0]["observation"].shape),
-        action_shape=np.prod(train_ds[0]["action"].shape)
+        action_shape=np.prod(train_ds[0]["action"].shape),
+        hiddens=args.hiddens,
     ).to(device)
 
     if state_dict:

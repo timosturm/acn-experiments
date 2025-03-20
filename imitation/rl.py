@@ -29,7 +29,8 @@ def train_ppo(
 
     agent = Agent(
         observation_shape=np.array(envs.single_observation_space.shape).prod(),
-        action_shape=np.array(envs.single_action_space.shape).prod()
+        action_shape=np.array(envs.single_action_space.shape).prod(),
+        hiddens=args.hiddens,
     ).to(device)
 
     if state_dict:

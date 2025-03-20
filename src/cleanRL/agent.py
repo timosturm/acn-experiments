@@ -1,7 +1,50 @@
+from typing import List
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.distributions.normal import Normal
+
+from itertools import chain, tee
+from typing import List
+import torch.nn as nn
+
+
+def _pairwise(iterable):
+    """
+    Taken from https://docs.python.org/3/library/itertools.html#itertools.pairwise, because the servers python
+    version does not yet have this from itertools.
+
+    Args:
+        iterable:
+
+    Returns:
+
+    """
+    # pairwise('ABCDEFG') --> AB BC CD DE EF FG
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
+
+
+def _build_model(n_inputs: int, hiddens: List[int], n_outputs: int, activations: nn.Module):
+    hiddens = [n_inputs] + hiddens
+
+    # if isinstance(activations, nn.Module):
+    #     activations = [activations for _ in dropouts]
+
+    hidden_layers = list(
+        chain.from_iterable(
+            (nn.Linear(n_in, n_out), activations)
+            for (n_in, n_out) in _pairwise(hiddens)
+        )
+    )
+
+    net = nn.Sequential(
+        *hidden_layers,
+        nn.Linear(hiddens[-1], n_outputs)
+    )
+
+    return net
 
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
@@ -11,31 +54,21 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
 
 
 class Agent(nn.Module):
-    def __init__(self, observation_shape: int, action_shape: int):
+    def __init__(self, observation_shape: int, action_shape: int, hiddens: List[int] = [128, 128, 64]):
         super().__init__()
 
-        # np.array(envs.single_observation_space.shape).prod()
-
-        self.critic = nn.Sequential(
-            layer_init(
-                nn.Linear(observation_shape, 128)),
-            nn.Tanh(),
-            layer_init(nn.Linear(128, 128)),
-            nn.Tanh(),
-            layer_init(nn.Linear(128, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 1))  # , std=1.0),
+        self.critic = _build_model(
+            n_inputs=observation_shape,
+            n_outputs=1,
+            hiddens=hiddens,
+            activations=nn.Tanh(),
         )
 
-        self.actor_mean = nn.Sequential(
-            layer_init(
-                nn.Linear(observation_shape, 128)),
-            nn.Tanh(),
-            layer_init(nn.Linear(128, 128)),
-            nn.Tanh(),
-            layer_init(nn.Linear(128, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, action_shape))  # , std=0.01)),
+        self.actor_mean = _build_model(
+            n_inputs=observation_shape,
+            n_outputs=action_shape,
+            hiddens=hiddens,
+            activations=nn.Tanh(),
         )
 
         self.actor_logstd = nn.Parameter(torch.zeros(1, action_shape))

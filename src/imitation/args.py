@@ -1,5 +1,6 @@
+from platform import architecture
 from gymnasium.vector.vector_env import VectorEnv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 import gymnasium as gym
 
@@ -8,6 +9,7 @@ import gymnasium as gym
 class EvalArgs:
     make_env: Callable[[], gym.Env]
     metrics: Dict
+    hiddens: List[int] = field(default_factory=lambda: [128, 128, 128])
 
     _env: Optional[gym.Env] = None
 
@@ -27,6 +29,11 @@ class ImitationArgs:
     lr: float = 1e-4
     batch_size: int = 512
     n_epochs: int = 10
+    hiddens: List[int] = field(default_factory=lambda: [128, 128, 128])
+
+    @property
+    def n_hiddens(self) -> int:
+        return len(self.hiddens)
 
 
 @dataclass
@@ -79,7 +86,9 @@ class RLArgs:
     minibatch_size: int = 0
     """the number of iterations (computed in runtime)"""
     num_iterations: int = 0
-    
+    """number of neurons per hidden layer"""
+    hiddens: List[int] = field(default_factory=lambda: [128, 128, 128])
+
     target_kl = None
 
 
