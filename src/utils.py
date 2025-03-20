@@ -1,3 +1,5 @@
+import numpy as np
+from sklearn.base import TransformerMixin, BaseEstimator
 import gymnasium as gym
 from acnportal.acnsim import Simulator
 from itertools import tee
@@ -78,7 +80,7 @@ def evaluate_model(model: CanSchedule, eval_env: gym.Env, seed: Optional[int] = 
 
         observation, rew, terminated, truncated, _ = eval_env.step(
             action)
-        
+
         agg_reward += rew
 
         # if isinstance(eval_env, MultiAgentEnv):
@@ -90,3 +92,22 @@ def evaluate_model(model: CanSchedule, eval_env: gym.Env, seed: Optional[int] = 
     evaluation_simulation = eval_env.unwrapped.interface._simulator
 
     return evaluation_simulation, agg_reward
+
+
+class ManualMaxScaler(BaseEstimator, TransformerMixin):
+    def __init__(self, max_values):
+        self.max_values = np.array(max_values)
+
+    def fit(self, X, y=None):
+        X = np.asarray(X)
+        if X.shape[1] != len(self.max_values):
+            raise ValueError(
+                f"Expected {X.shape[1]} max values, but got {len(self.max_values)}")
+        return self  # No fitting needed
+
+    def transform(self, X):
+        X = np.asarray(X)
+        return X / self.max_values  # Element-wise division
+
+    def inverse_transform(self, X_scaled):
+        return X_scaled * self.max_values  # Multiply back by max values
