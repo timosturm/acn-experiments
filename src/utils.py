@@ -1,15 +1,15 @@
+from acnportal.acndata import DataClient
+import pandas as pd
 from datetime import datetime
-from sklearn.mixture import BayesianGaussianMixture
 import pytz
-from gymportal.auxilliaries.file_utils import get_persistent_folder
-from gymportal.data.ev_generators import SklearnGenerator, get_data, extract_training_data
+from gymportal.data.ev_generators import SklearnGenerator, extract_training_data
 import pickle
 import numpy as np
 from sklearn.base import TransformerMixin, BaseEstimator
 import gymnasium as gym
 from acnportal.acnsim import Simulator
 from itertools import tee
-from typing import Optional
+from typing import List, Optional, Tuple, Union
 from gymportal.evaluation import CanSchedule
 
 import gymnasium.spaces as spaces
@@ -56,7 +56,7 @@ def _pairwise(iterable):
     return zip(a, b)
 
 
-def evaluate_model(model: CanSchedule, eval_env: gym.Env, seed: Optional[int] = None) -> Simulator:
+def evaluate_model(model: CanSchedule, eval_env: gym.Env, seed: Optional[int] = None) -> Tuple[Simulator, float]:
     """
     Evaluates a model / algorithm (either from stable_baselines3 or acnportal) by running a simulation.
     In the case of stable_baselines3 models, the predictions are made deterministically.
@@ -171,8 +171,64 @@ class ScalableSklearnGenerator(SklearnGenerator):
             return np.array([])
 
 
+def get_data(site: str, token: str = 'DEMO_TOKEN',
+             drop_columns: Union[List, Tuple] = (
+                 '_id', 'userInputs', 'userID', 'sessionID', 'timezone', 'clusterID', 'siteID', 'doneChargingTime'),
+             timeseries=False, start=None, end=None, file_path: str = None):
+    """
+    Downloads data from the acn portal api. See https://ev.caltech.edu/index
+    Data is saved locally as a .csv to prevent unnecessary network requests and to save time.
+
+    Args:
+        site: str
+            Site to fetch the data for, i.e., 'caltech', 'jpl', or 'office001'
+        token: str
+            The api token. Default 'DEMO_TOKEN'
+        drop_columns: List or Tuple
+            Optional columns to drop from the dataframe before returning it, a default selection is provided.
+            This does not affect the columns that are saved in the .csv, only the DataFrame that is returned.
+        timeseries: bool
+            If timeseries should be fetched or not.
+        start: datetime, Optional
+            Start date, only EVs connected after this date are returned.
+        end: datetime, Optional
+            End date, only EVS connected before this date are returned.
+
+    Returns:
+        pd.DataFrame
+    """
+    timezone = pytz.timezone("America/Los_Angeles")
+
+    if not start:
+        start = timezone.localize(datetime(2018, 4, 1))
+    if not end:
+        end = timezone.localize(datetime(2021, 9, 14))
+
+    file_path = f"{site}_{start}_{end}_{timeseries}" if not file_path else file_path
+
+    try:
+        # Use offline data if available
+        data = pd.read_csv(file_path, index_col=0, dtype={
+                           "kWhDelivered": np.float64, "spaceID": str})
+        data.connectionTime = pd.to_datetime(data.connectionTime, format='%Y-%m-%d %H:%M:%S%z', exact=True,
+                                             utc=True).map(lambda x: x.tz_convert("America/Los_Angeles"))
+        data.disconnectTime = pd.to_datetime(data.disconnectTime, format='%Y-%m-%d %H:%M:%S%z', exact=True,
+                                             utc=True).map(lambda x: x.tz_convert("America/Los_Angeles"))
+    except FileNotFoundError:
+        print(f"Downloading data for {site}")
+        client = DataClient(token)
+        docs = client.get_sessions_by_time(
+            site, start, end, timeseries=timeseries
+        )
+        data = pd.DataFrame.from_dict(docs)
+        data.to_csv(file_path)
+
+    data = data.drop(columns=list(drop_columns))
+    return data
+
+
 def get_generator(site, model_path: str, battery_generator, token: Optional[str] = None, seed: Optional[int] = None,
-                  frequency_multiplicator=10, duration_multiplicator=1):
+                  frequency_multiplicator=10, duration_multiplicator=1, file_path: str = None):
     """
 
     Args:
@@ -192,8 +248,10 @@ def get_generator(site, model_path: str, battery_generator, token: Optional[str]
         token,
         drop_columns=(),
         start=datetime(2018, 3, 25, tzinfo=timezone),
-        end=datetime(2020, 5, 31, tzinfo=timezone)
+        end=datetime(2020, 5, 31, tzinfo=timezone),
+        file_path=file_path,
     )
+
     X = extract_training_data(data)
 
     try:

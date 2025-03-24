@@ -52,11 +52,12 @@ battery_generator = CustomizableBatteryGenerator(
 # ev_generator = RealWorldGenerator(battery_generator=battery_generator, site='caltech', period=1)
 ev_generator = get_generator(
     'caltech',
-    "triple_gmm+sc.pkl",
+    "../triple_gmm+sc.pkl",
     battery_generator,
     seed=42,
     frequency_multiplicator=10,
-    duration_multiplicator=2
+    duration_multiplicator=2,
+    file_path="../caltech_2018-03-25 00:00:00-07:53_2020-05-31 00:00:00-07:53_False.csv"
 )
 
 # TODO Use time intervals and GMMs from https://github.com/chrisyeh96/sustaingym/blob/main/sustaingym/envs/evcharging/utils.py
