@@ -194,7 +194,7 @@ if __name__ == "__main__":
         # sampler=
         pruner=MedianPruner(
             n_startup_trials=10,
-            n_warmup_steps=5
+            n_warmup_steps=5,
         )
     )
 

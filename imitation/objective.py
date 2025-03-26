@@ -158,7 +158,7 @@ def objective_IL(
         "lr_imitation", 1e-5, 1e-2, log=True)
     # args.imitation.n_epochs = trial.suggest_categorical(
     #     "n_epochs_imitation", [5, 10, 20, 30, 40, 60, 80, 100])
-    args.imitation.n_epochs = 1000
+    args.imitation.n_epochs = 300
 
     # architecture optimization:
     n_layers = trial.suggest_int("n_hidden_layers", 2, 5)
