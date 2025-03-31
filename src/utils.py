@@ -204,7 +204,7 @@ def get_data(site: str, token: str = 'DEMO_TOKEN',
     if not end:
         end = timezone.localize(datetime(2021, 9, 14))
 
-    file_path = f"{site}_{start}_{end}_{timeseries}" if not file_path else file_path
+    file_path = f"{site}_{start}_{end}_{timeseries}.csv" if not file_path else file_path
 
     try:
         # Use offline data if available
