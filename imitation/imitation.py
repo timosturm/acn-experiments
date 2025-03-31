@@ -69,6 +69,8 @@ def imitate(
 
         return loss
 
+    val_loss = calc_val_loss(agent, validation_loader)
+
     for epoch in range(args.n_epochs):
         for step, x in enumerate(train_loader):
             action, _, _, _ = agent.get_action_and_value(
@@ -77,15 +79,15 @@ def imitate(
             loss = criterion(action, x["action"].to(device))
             writer.add_scalar("imitation/train_loss", loss.item(), epoch)
 
-            if step % 100 == 0:
-                agent.eval()
-                val_loss = calc_val_loss(agent, validation_loader)
-                writer.add_scalar("imitation/validation_loss",
-                                  val_loss.item(), epoch)
-                agent.train()
+            # if step % 1 == 0:
+            agent.eval()
+            val_loss = calc_val_loss(agent, validation_loader)
+            writer.add_scalar("imitation/validation_loss",
+                                val_loss.item(), epoch)
+            agent.train()
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-        yield epoch, agent.state_dict()
+        yield epoch, agent.state_dict(), val_loss

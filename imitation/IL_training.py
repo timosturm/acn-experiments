@@ -190,7 +190,7 @@ if __name__ == "__main__":
         study_name='IL-tuning',
         storage='sqlite:///IL-tuning.db',
         load_if_exists=True,
-        direction="maximize",
+        direction="minimize",
         # sampler=
         pruner=MedianPruner(
             n_startup_trials=10,
