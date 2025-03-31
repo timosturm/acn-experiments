@@ -325,7 +325,7 @@ def objective_RL(
 
     old_return = 0
     # Reinforcement Learning
-    for i, (global_step, state_dict) in enumerate(train_ppo(args.rl, writer, device, state_dict=None)):
+    for i, (global_step, state_dict) in enumerate(train_ppo(args.rl, writer, device, state_dict=args.state_dict)):
         eval_sim, new_return = validate_on_env(args.eval, state_dict)
         writer.add_scalar("eval/return", new_return, global_step)
 

@@ -91,6 +91,8 @@ class RLArgs:
 
     target_kl = None
 
+    state_dict: Optional[dict] = None
+
 
 @dataclass
 class MyArgs:
