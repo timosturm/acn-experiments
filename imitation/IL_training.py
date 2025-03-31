@@ -167,7 +167,7 @@ metrics = {
 args = MyArgs(
     exp_name="Imitation",
     wandb_project_name="imitation",
-    wandb_group="test run",
+    wandb_group="fix",
     seed=42,  # TODO
     imitation=ImitationArgs(
         # TODO Store baseline as a parameter
@@ -187,8 +187,8 @@ args = MyArgs(
 
 if __name__ == "__main__":
     study = optuna.create_study(
-        study_name='IL-tuning',
-        storage='sqlite:///IL-tuning.db',
+        study_name='IL-tuning_fix',
+        storage='sqlite:///IL-tuning_fix.db',
         load_if_exists=True,
         direction="minimize",
         # sampler=
