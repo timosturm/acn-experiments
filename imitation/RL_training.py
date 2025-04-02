@@ -1,4 +1,6 @@
+import json
 from optuna.pruners import MedianPruner
+import torch
 from src.cleanRL.environment import make_env
 from src.observations import minute_observation_stay
 from src.pv.metrics import *
@@ -164,10 +166,19 @@ metrics = {
     "unused pv": lambda sim: unused_pv_metric(sim, df_pv),
 }
 
+# prepare loading the best model
+name = "Imitation_best"
+best_state_dict = torch.load(f"{name}.mdl", weights_only=True)
+with open(f"{name}.json", 'rb') as file:
+    js = json.loads(file.read())
+    hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
+
+study_name:str = "RL-tuning"
+
 args = MyArgs(
     exp_name="RL",
     wandb_project_name="rl",
-    wandb_group="test run",
+    wandb_group=study_name,
     seed=42,  # TODO
     imitation=ImitationArgs(
         # TODO Store baseline as a parameter
@@ -177,18 +188,21 @@ args = MyArgs(
     eval=EvalArgs(
         make_env=lambda: make_env(validation_config, 0.99, 0, 930932)(),
         metrics=metrics,
+        hiddens=hiddens,
     ),
     rl=RLArgs(
         total_timesteps=steps_per_epoch * 20,
         config=train_config,
         metrics=metrics,
+        state_dict=best_state_dict,
+        hiddens=hiddens,
     ),
 )
 
 if __name__ == "__main__":
     study = optuna.create_study(
-        study_name='RL-tuning',
-        storage='sqlite:///RL-tuning.db',
+        study_name=study_name,
+        storage=f'sqlite:///{study_name}.db',
         load_if_exists=True,
         direction="maximize",
         # sampler=

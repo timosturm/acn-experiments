@@ -325,28 +325,35 @@ def objective_RL(
 
     old_return = 0
     # Reinforcement Learning
-    for i, (global_step, state_dict) in enumerate(train_ppo(args.rl, writer, device, state_dict=args.state_dict)):
-        eval_sim, new_return = validate_on_env(args.eval, state_dict)
-        writer.add_scalar("eval/return", new_return, global_step)
+    for i, (global_step, state_dict) in enumerate(train_ppo(args.rl, writer, device, state_dict=args.rl.state_dict)):
+        # necessary variables (num_steps) are populated by "train_ppo"
+        steps_per_epoch = (args.rl.num_iterations * args.rl.num_steps) / 20
 
-        for metric_name, f in args.eval.metrics.items():
-            writer.add_scalar(f"eval/{metric_name}", f(eval_sim), global_step)
+        if global_step % steps_per_epoch == 0:
+            # evaluate the agent every epoch
+            eval_sim, new_return = validate_on_env(args.eval, state_dict)
+            writer.add_scalar("eval/return", new_return, global_step)
 
-        metadata |= {"rl": {"return": new_return, "global_step": global_step}}
-        save_state_dict(args, run_name, state_dict, "rl",
-                        global_step, metadata=metadata)
+            for metric_name, f in args.eval.metrics.items():
+                writer.add_scalar(
+                    f"eval/{metric_name}", f(eval_sim), global_step)
 
-        if new_return > old_return:
-            best_return = new_return
+            metadata |= {
+                "rl": {"return": new_return, "global_step": global_step}}
             save_state_dict(args, run_name, state_dict, "rl",
-                            i="best", metadata=metadata)
+                            global_step, metadata=metadata)
 
-        trial.report(new_return, i)
-        if trial.should_prune():
-            clean_up(args, writer)
-            raise TrialPruned()
+            if new_return > old_return:
+                best_return = new_return
+                save_state_dict(args, run_name, state_dict, "rl",
+                                i="best", metadata=metadata)
 
-        old_return = new_return
+            trial.report(new_return, i)
+            if trial.should_prune():
+                clean_up(args, writer)
+                raise TrialPruned()
+
+            old_return = new_return
 
     clean_up(args, writer, wandb.run)
 
