@@ -335,28 +335,31 @@ def objective_RL(
         # if global_step % steps_per_epoch == 0:
         #     # evaluate the agent every epoch
 
-        eval_sim, new_return = validate_on_env(args.eval, state_dict)
-        writer.add_scalar("eval/return", new_return, global_step)
+        # because step_size is a power of 2, i.e., 2**6; and the maximum step_size is 2048 train_ppo yields at least every 2048 steps
+        if global_step % 2048 == 0:
+            eval_sim, new_return = validate_on_env(args.eval, state_dict)
+            writer.add_scalar("eval/return", new_return, global_step)
 
-        for metric_name, f in args.eval.metrics.items():
-            writer.add_scalar(
-                f"eval/{metric_name}", f(eval_sim), global_step)
+            for metric_name, f in args.eval.metrics.items():
+                writer.add_scalar(
+                    f"eval/{metric_name}", f(eval_sim), global_step)
 
-        metadata |= {"rl": {"return": new_return, "global_step": global_step}}
-        save_state_dict(args, run_name, state_dict, "rl",
-                        global_step, metadata=metadata)
-
-        if new_return > old_return:
-            best_return = new_return
+            metadata |= {
+                "rl": {"return": new_return, "global_step": global_step}}
             save_state_dict(args, run_name, state_dict, "rl",
-                            i="best", metadata=metadata)
+                            global_step, metadata=metadata)
 
-        trial.report(new_return, i)
-        if trial.should_prune():
-            clean_up(args, writer)
-            raise TrialPruned()
+            if new_return > old_return:
+                best_return = new_return
+                save_state_dict(args, run_name, state_dict, "rl",
+                                i="best", metadata=metadata)
 
-        old_return = new_return
+            trial.report(new_return, i)
+            if trial.should_prune():
+                clean_up(args, writer)
+                raise TrialPruned()
+
+            old_return = new_return
 
     clean_up(args, writer, wandb.run)
 
