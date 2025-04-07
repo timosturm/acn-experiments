@@ -147,10 +147,13 @@ for eval_sim in train_generator._sim_memory:
 
 ic(steps_per_epoch)
 
-train_config = {"observation_objects": observation_objects, "action_object": zero_centered_single_charging_schedule_normalized(),
-                "reward_objects": reward_objects,
-                "simgenerator": train_generator,
-                "meet_constraints": True}
+train_config = {
+    "observation_objects": observation_objects,
+    "action_object": zero_centered_single_charging_schedule_normalized(),
+    "reward_objects": reward_objects,
+    "simgenerator": train_generator,
+    "meet_constraints": True,
+}
 
 validation_config = train_config | {'simgenerator': validation_generator}
 test_config = train_config | {'simgenerator': test_generator}
@@ -161,9 +164,9 @@ metrics = {
     "median SoC": median_soc,
     # "prop feasible steps": proportion_of_feasible_charging,
     # "prop feasible charge": proportion_of_feasible_charge,
-    "pv utilization": lambda sim: pv_utilization_metric(sim, df_pv),
+    "% charged from PV": lambda sim: pv_utilization_metric(sim, df_pv),
     "grid usage": lambda sim: grid_use_metric(sim, df_pv),
-    "unused pv": lambda sim: unused_pv_metric(sim, df_pv),
+    "unused PV": lambda sim: unused_pv_metric(sim, df_pv),
 }
 
 # prepare loading the best model
@@ -173,12 +176,12 @@ with open(f"{name}.json", 'rb') as file:
     js = json.loads(file.read())
     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name:str = "RL-tuning"
+study_name: str = "RL-tuning"
 
 args = MyArgs(
     exp_name="RL",
     wandb_project_name="rl",
-    wandb_group=study_name,
+    wandb_group=study_name + "_1-unused_pv_log_every_i",
     seed=42,  # TODO
     imitation=ImitationArgs(
         # TODO Store baseline as a parameter

@@ -273,8 +273,10 @@ def objective_RL(
     args.rl.max_grad_norm = trial.suggest_float("max_grad_norm_rl", 0.3, 0.7)
     args.rl.vf_coef = trial.suggest_float("vf_coef_rl", 0, 1)
     args.rl.clip_coef = trial.suggest_float("clip_coef_rl", 0, 1)
-    args.rl.num_steps = trial.suggest_int(
-        "num_steps / batch_size", 128, 2048, log=True)
+    # args.rl.num_steps = trial.suggest_int(
+    #     "num_steps / batch_size", 128, 2048, log=True)
+    args.rl.num_steps = trial.suggest_categorical(
+        "num_steps / batch_size", [2**6, 2**7, 2**8, 2**9, 2**10, 2**11])
 
     args.rl.batch_size = int(args.rl.num_envs * args.rl.num_steps)
     args.rl.minibatch_size = int(args.rl.batch_size // args.rl.num_minibatches)
@@ -327,33 +329,34 @@ def objective_RL(
     # Reinforcement Learning
     for i, (global_step, state_dict) in enumerate(train_ppo(args.rl, writer, device, state_dict=args.rl.state_dict)):
         # necessary variables (num_steps) are populated by "train_ppo"
-        steps_per_epoch = (args.rl.num_iterations * args.rl.num_steps) / 20
+        # steps_per_epoch = (args.rl.num_iterations * args.rl.num_steps) / 20
+        # steps_per_epoch = args.rl.total_timesteps / 20
 
-        if global_step % steps_per_epoch == 0:
-            # evaluate the agent every epoch
-            eval_sim, new_return = validate_on_env(args.eval, state_dict)
-            writer.add_scalar("eval/return", new_return, global_step)
+        # if global_step % steps_per_epoch == 0:
+        #     # evaluate the agent every epoch
 
-            for metric_name, f in args.eval.metrics.items():
-                writer.add_scalar(
-                    f"eval/{metric_name}", f(eval_sim), global_step)
+        eval_sim, new_return = validate_on_env(args.eval, state_dict)
+        writer.add_scalar("eval/return", new_return, global_step)
 
-            metadata |= {
-                "rl": {"return": new_return, "global_step": global_step}}
+        for metric_name, f in args.eval.metrics.items():
+            writer.add_scalar(
+                f"eval/{metric_name}", f(eval_sim), global_step)
+
+        metadata |= {"rl": {"return": new_return, "global_step": global_step}}
+        save_state_dict(args, run_name, state_dict, "rl",
+                        global_step, metadata=metadata)
+
+        if new_return > old_return:
+            best_return = new_return
             save_state_dict(args, run_name, state_dict, "rl",
-                            global_step, metadata=metadata)
+                            i="best", metadata=metadata)
 
-            if new_return > old_return:
-                best_return = new_return
-                save_state_dict(args, run_name, state_dict, "rl",
-                                i="best", metadata=metadata)
+        trial.report(new_return, i)
+        if trial.should_prune():
+            clean_up(args, writer)
+            raise TrialPruned()
 
-            trial.report(new_return, i)
-            if trial.should_prune():
-                clean_up(args, writer)
-                raise TrialPruned()
-
-            old_return = new_return
+        old_return = new_return
 
     clean_up(args, writer, wandb.run)
 
