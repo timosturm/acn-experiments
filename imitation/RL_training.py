@@ -176,12 +176,12 @@ with open(f"{name}.json", 'rb') as file:
     js = json.loads(file.read())
     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "RL-tuning"
+study_name: str = "RL-tuning_1-unused_pv_log_every_i"
 
 args = MyArgs(
     exp_name="RL",
     wandb_project_name="rl",
-    wandb_group=study_name + "_1-unused_pv_log_every_i",
+    wandb_group=study_name,
     seed=42,  # TODO
     imitation=ImitationArgs(
         # TODO Store baseline as a parameter
