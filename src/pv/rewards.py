@@ -84,9 +84,9 @@ def grid_use_penalty(df_pv: pd.DataFrame) -> SimReward:
                      multi_reward_function=multi_reward, name="grid_use_penalty")
 
 
-def unused_pv_penalty(df_pv: pd.DataFrame) -> SimReward:
+def unused_pv_reward(df_pv: pd.DataFrame) -> SimReward:
     """
-    Penalizes unused capacity of the PV.
+    Rewards usage of PV capacity for charging.
     """
 
     def multi_reward(env: BaseSimInterface) -> MultiAgentDict:
