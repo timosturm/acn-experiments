@@ -100,7 +100,7 @@ def unused_pv_penalty(df_pv: pd.DataFrame) -> SimReward:
         energy_total = _energy_total(env)
         pv_total = _pv_total(env, df_pv)
 
-        return -unused_pv(energy_total, pv_total)
+        return 1 - unused_pv(energy_total, pv_total)
 
     return SimReward(single_reward_function=single_reward,
                      multi_reward_function=multi_reward, name="unused_pv_penalty")
