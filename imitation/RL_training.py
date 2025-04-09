@@ -164,7 +164,7 @@ metrics = {
     "median SoC": median_soc,
     # "prop feasible steps": proportion_of_feasible_charging,
     # "prop feasible charge": proportion_of_feasible_charge,
-    "% charged from PV": lambda sim: pv_utilization_metric(sim, df_pv),
+    # "pv utilization": lambda sim: pv_utilization_metric(sim, df_pv),
     "grid usage": lambda sim: grid_use_metric(sim, df_pv),
     "unused PV": lambda sim: unused_pv_metric(sim, df_pv),
 }
