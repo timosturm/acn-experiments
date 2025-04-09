@@ -121,7 +121,7 @@ observation_objects = [
 reward_objects = [
     pv_utilization_reward(df_pv),
     # grid_use_penalty(df_pv),
-    unused_pv_penalty(df_pv),
+    unused_pv_reward(df_pv),
     charging_reward(),
     # soft_charging_reward_pv_weighted(df_pv, transformer_cap=150),
 ]
