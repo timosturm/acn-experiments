@@ -321,8 +321,14 @@ def objective_RL(
     old_return = -np.inf
     best_return = -np.inf
 
+    hidden_metadata = {
+        "n_hidden_layers": len(args.rl.hiddens),
+    } | {
+        f"n_neurons_layer_{i}": n_hiddens for i, n_hiddens in enumerate(args.rl.hiddens)
+    }
+
     metadata = {
-        "parameter": trial.params
+        "parameter": trial.params | hidden_metadata
     }
 
     old_return = 0
@@ -345,7 +351,8 @@ def objective_RL(
                     f"eval/{metric_name}", f(eval_sim), global_step)
 
             metadata |= {
-                "rl": {"return": new_return, "global_step": global_step}}
+                "rl": {"return": new_return, "global_step": global_step}
+            }
             save_state_dict(args, run_name, state_dict, "rl",
                             global_step, metadata=metadata)
 
