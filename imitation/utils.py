@@ -25,13 +25,13 @@ def save_state_dict(args, run_name: str, state_dict: OrderedDict, type: str, i: 
 
     torch.save(state_dict, f"{path}/{name}.mdl")
 
-    artifact = wandb.Artifact(
-        f'model_{type}{i}',
-        type=f'model_{type}',
-        metadata=metadata,
-    )
-    artifact.add_file(f"{path}/{name}.mdl")
-    wandb.log_artifact(artifact)
+    # artifact = wandb.Artifact(
+    #     f'model_{type}{i}',
+    #     type=f'model_{type}',
+    #     metadata=metadata,
+    # )
+    # artifact.add_file(f"{path}/{name}.mdl")
+    # wandb.log_artifact(artifact)
 
     with open(f"{path}/{name}.json", 'w') as file:
         file.write(json.dumps(metadata))
