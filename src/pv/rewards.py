@@ -25,8 +25,8 @@ def _energy_total(env: BaseSimInterface) -> np.ndarray:
     timestep_now = env.timestep
     timestep_prev = env.prev_timestep
 
-    charging_rates = env.interface.charging_rates[:,
-                                                  timestep_prev: timestep_now]
+    charging_rates = \
+        env.interface.charging_rates[:, timestep_prev: timestep_now]
 
     charging_rates_sum = np.sum(charging_rates, axis=0)
 
@@ -34,8 +34,12 @@ def _energy_total(env: BaseSimInterface) -> np.ndarray:
 
 
 def _pv_total(env: BaseSimInterface, df_pv: pd.DataFrame) -> np.ndarray:
-    pvs_in_A = np.array([W_to_A(x, env.interface._simulator.network._voltages)
-                        for x in get_pvs_in_W(env, df_pv)])
+    pvs_in_A = np.array(
+        [
+            W_to_A(x, env.interface._simulator.network._voltages)
+            for x in get_pvs_in_W(env, df_pv)
+        ]
+    )
 
     return pvs_in_A
 
