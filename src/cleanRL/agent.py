@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.distributions.normal import Normal
-
+from torch.distributions.beta import Beta
 from itertools import chain, tee
 from typing import List
 import torch.nn as nn
@@ -78,18 +78,64 @@ class Agent(nn.Module):
 
     def get_action_and_value(self, x, action=None):
         action_mean = self.actor_mean(x)
+
         action_logstd = self.actor_logstd.expand_as(action_mean)
         action_std = torch.exp(action_logstd)
 
         probs = Normal(action_mean, action_std)
-        # if action is None:
-        #   action = probs.sample()
-
-        # reparametrisation trick; see https://arxiv.org/abs/1312.6114, Section 2.4
-        # such that the action is part of the computation graph when use in loss calculation
         if action is None:
-            epsilon = Normal(torch.zeros_like(action_mean),
-                             torch.ones_like(action_mean)).sample()
-            action = action_mean + action_std * epsilon
+            action = probs.rsample()
+
+        # # reparametrisation trick; see https://arxiv.org/abs/1312.6114, Section 2.4
+        # # such that the action is part of the computation graph when used in loss calculation
+        # if action is None:
+        #     epsilon = Normal(
+        #         torch.zeros_like(action_mean),
+        #         torch.ones_like(action_mean)
+        #     ).sample()
+
+        #     action = action_mean + action_std * epsilon
+
+        return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), self.critic(x)
+
+
+class BetaAgent(nn.Module):
+    def __init__(self, observation_shape: int, action_shape: int, hiddens: List[int] = [128, 128, 64]):
+        super().__init__()
+
+        self.critic = _build_model(
+            n_inputs=observation_shape,
+            n_outputs=1,
+            hiddens=hiddens,
+            activations=nn.Tanh(),
+        )
+
+        self._actor_alpha = _build_model(
+            n_inputs=observation_shape,
+            n_outputs=action_shape,
+            hiddens=hiddens,
+            activations=nn.Tanh(),
+        )
+
+        self._actor_beta = _build_model(
+            n_inputs=observation_shape,
+            n_outputs=action_shape,
+            hiddens=hiddens,
+            activations=nn.Tanh(),
+        )
+
+    def softplus(self, x):
+        return torch.log(1 + torch.exp(x)) + 1
+
+    def get_value(self, x):
+        return self.critic(x)
+
+    def get_action_and_value(self, x, action=None):
+        alpha = self.softplus(self._actor_alpha(x))
+        beta = self.softplus(self._actor_beta(x))
+
+        probs = Beta(alpha, beta)
+        if action is None:
+            action = probs.rsample()
 
         return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), self.critic(x)

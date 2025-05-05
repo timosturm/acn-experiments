@@ -16,7 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from icecream import ic
 from src.imitation.args import MyArgs
-from imitation import imitate
+from il import imitate
 from rl import train_ppo
 from utils import save_state_dict, validate_on_env, clean_up
 
@@ -161,9 +161,12 @@ def objective_IL(
     args.imitation.n_epochs = 300
 
     # architecture optimization:
-    n_layers = trial.suggest_int("n_hidden_layers", 2, 5)
+    hiddens = args.imitation.hiddens
+    n_layers = trial.suggest_int("n_hidden_layers", len(hiddens), len(hiddens))
+    # n_layers = trial.suggest_int("n_hidden_layers", 2, 5)
     hiddens = [
-        trial.suggest_int(f"n_neurons_layer_{i}", 64, 2048, log=True)
+        trial.suggest_int(f"n_neurons_layer_{i}", hiddens[i], hiddens[i])
+        # trial.suggest_int(f"n_neurons_layer_{i}", 64, 2048, log=True)
         for i in range(n_layers)
     ]
     args.imitation.hiddens = hiddens
