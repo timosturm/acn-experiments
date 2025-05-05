@@ -17,6 +17,35 @@ from gymnasium.wrappers import FlattenObservation
 from gymportal.environment import SingleAgentSimEnv
 from gymportal.auxilliaries.interfaces_custom import EvaluationGymTrainingInterface
 
+CC_pod_ids = [
+    "CA-322",
+    "CA-493",
+    "CA-496",
+    "CA-320",
+    "CA-495",
+    "CA-321",
+    "CA-323",
+    "CA-494",
+]
+AV_pod_ids = [
+    "CA-324",
+    "CA-325",
+    "CA-326",
+    "CA-327",
+    "CA-489",
+    "CA-490",
+    "CA-491",
+    "CA-492",
+]
+
+
+def get_power_function(voltage: float):
+    def power_function(seed):
+        rng = np.random.default_rng(seed)
+        return np.clip(rng.normal(20, 1), 8, 32) * voltage / 1000
+
+    return power_function
+
 
 class FlattenSimEnv(FlattenObservation):
 
