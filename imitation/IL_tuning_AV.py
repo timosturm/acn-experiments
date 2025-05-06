@@ -168,7 +168,7 @@ metrics = {
     "unused PV": lambda sim: unused_pv_metric(sim, df_pv),
 }
 
-study_name: str = "IL-tuning-caltech"
+study_name: str = "IL-tuning-AV"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
