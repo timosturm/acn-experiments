@@ -41,7 +41,7 @@ def imitate(
         collate_fn=collate_to_float32,
     )
 
-    agent = Agent(
+    agent = args.agent_class(
         observation_shape=np.prod(train_ds[0]["observation"].shape),
         action_shape=np.prod(train_ds[0]["action"].shape),
         hiddens=args.hiddens,

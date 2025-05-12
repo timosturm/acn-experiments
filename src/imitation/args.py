@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 import gymnasium as gym
 
+from src.cleanRL.agent import Agent
+
 
 @dataclass
 class EvalArgs:
@@ -30,6 +32,7 @@ class ImitationArgs:
     batch_size: int = 512
     n_epochs: int = 10
     hiddens: List[int] = field(default_factory=lambda: [128, 128, 128])
+    agent_class = Agent
 
     @property
     def n_hiddens(self) -> int:
@@ -92,6 +95,7 @@ class RLArgs:
     target_kl = None
 
     state_dict: Optional[dict] = None
+    agent_class = Agent
 
 
 @dataclass

@@ -27,7 +27,7 @@ def train_ppo(
     assert isinstance(envs.single_action_space,
                       gym.spaces.Box), "only continuous action space is supported"
 
-    agent = Agent(
+    agent = args.agent_class(
         observation_shape=np.array(envs.single_observation_space.shape).prod(),
         action_shape=np.array(envs.single_action_space.shape).prod(),
         hiddens=args.hiddens,

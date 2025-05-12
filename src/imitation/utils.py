@@ -42,7 +42,7 @@ def save_state_dict(args, run_name: str, state_dict: OrderedDict, type: str, i: 
 
 
 def validate_on_env(args: EvalArgs, state_dict: OrderedDict) -> float:
-    agent = Agent(
+    agent = args.agent_class(
         observation_shape=np.array(args.env.observation_space.shape).prod(),
         action_shape=np.array(args.env.action_space.shape).prod(),
         hiddens=args.hiddens,
