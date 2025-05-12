@@ -7,6 +7,7 @@ from torch.distributions.beta import Beta
 from itertools import chain, tee
 from typing import List
 import torch.nn as nn
+from icecream import ic
 
 
 def _pairwise(iterable):
@@ -116,7 +117,7 @@ class BetaAgent(nn.Module):
         self._actor_base = _build_model(
             n_inputs=observation_shape,
             n_outputs=last_hidden,
-            hiddens=hiddens[:-1],
+            hiddens=list(hiddens[:-1]),
             activation=nn.Tanh(),
         )
 
@@ -139,9 +140,9 @@ class BetaAgent(nn.Module):
         return self.critic(x)
 
     def get_action_and_value(self, x, action=None):
-        x = self._actor_base(x)
-        alpha = self.alpha_head(x) + 1
-        beta = self.beta_head(x) + 1
+        actor_x = self._actor_base(x)
+        alpha = self.alpha_head(actor_x) + 1
+        beta = self.beta_head(actor_x) + 1
 
         probs = Beta(alpha, beta)
         if action is None:
