@@ -116,7 +116,7 @@ class BetaAgent(nn.Module):
         self._actor_base = _build_model(
             n_inputs=observation_shape,
             n_outputs=last_hidden,
-            hiddens=hiddens[:, -1],
+            hiddens=hiddens[:-1],
             activation=nn.Tanh(),
         )
 
