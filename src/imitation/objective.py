@@ -16,9 +16,9 @@ from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from icecream import ic
 from src.imitation.args import MyArgs
-from il import imitate
-from rl import train_ppo
-from utils import save_state_dict, validate_on_env, clean_up
+from .il import imitate
+from .rl import train_ppo
+from .utils import save_state_dict, validate_on_env, clean_up
 
 
 def objective_combined(

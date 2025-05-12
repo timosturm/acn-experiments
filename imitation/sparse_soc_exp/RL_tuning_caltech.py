@@ -20,7 +20,7 @@ import os
 import optuna
 from icecream import ic
 from src.imitation.args import MyArgs, ImitationArgs, RLArgs, EvalArgs
-from objective import objective_IL, objective_RL, objective_combined
+from src.imitation.objective import objective_IL, objective_RL, objective_combined
 from src.rewards import sparse_soc_reward
 from src.utils import AV_pod_ids, get_generator, get_power_function
 
