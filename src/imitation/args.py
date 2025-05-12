@@ -1,3 +1,4 @@
+import torch.nn as nn
 from platform import architecture
 from gymnasium.vector.vector_env import VectorEnv
 from dataclasses import dataclass, field
@@ -12,6 +13,7 @@ class EvalArgs:
     make_env: Callable[[], gym.Env]
     metrics: Dict
     hiddens: List[int] = field(default_factory=lambda: [128, 128, 128])
+    agent_class: nn.Module = Agent
 
     _env: Optional[gym.Env] = None
 
@@ -32,7 +34,7 @@ class ImitationArgs:
     batch_size: int = 512
     n_epochs: int = 10
     hiddens: List[int] = field(default_factory=lambda: [128, 128, 128])
-    agent_class = Agent
+    agent_class: nn.Module = Agent
 
     @property
     def n_hiddens(self) -> int:
@@ -95,7 +97,7 @@ class RLArgs:
     target_kl = None
 
     state_dict: Optional[dict] = None
-    agent_class = Agent
+    agent_class: nn.Module = Agent
 
 
 @dataclass
