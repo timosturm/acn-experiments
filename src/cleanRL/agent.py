@@ -26,7 +26,7 @@ def _pairwise(iterable):
     return zip(a, b)
 
 
-def _build_model(n_inputs: int, hiddens: List[int], n_outputs: int, activations: nn.Module):
+def _build_model(n_inputs: int, hiddens: List[int], n_outputs: int, activation: nn.Module):
     hiddens = [n_inputs] + hiddens
 
     # if isinstance(activations, nn.Module):
@@ -34,7 +34,7 @@ def _build_model(n_inputs: int, hiddens: List[int], n_outputs: int, activations:
 
     hidden_layers = list(
         chain.from_iterable(
-            (nn.Linear(n_in, n_out), activations)
+            (nn.Linear(n_in, n_out), activation)
             for (n_in, n_out) in _pairwise(hiddens)
         )
     )
@@ -61,14 +61,14 @@ class Agent(nn.Module):
             n_inputs=observation_shape,
             n_outputs=1,
             hiddens=hiddens,
-            activations=nn.Tanh(),
+            activation=nn.Tanh(),
         )
 
         self.actor_mean = _build_model(
             n_inputs=observation_shape,
             n_outputs=action_shape,
             hiddens=hiddens,
-            activations=nn.Tanh(),
+            activation=nn.Tanh(),
         )
 
         self.actor_logstd = nn.Parameter(torch.zeros(1, action_shape))
@@ -107,21 +107,29 @@ class BetaAgent(nn.Module):
             n_inputs=observation_shape,
             n_outputs=1,
             hiddens=hiddens,
-            activations=nn.Tanh(),
+            activation=nn.Tanh(),
         )
 
-        self._actor_alpha = _build_model(
+        hiddens = np.array(hiddens)
+        last_hidden = hiddens[-1]
+
+        self._actor_base = _build_model(
             n_inputs=observation_shape,
-            n_outputs=action_shape,
-            hiddens=hiddens,
-            activations=nn.Tanh(),
+            n_outputs=last_hidden,
+            hiddens=hiddens[:, -1],
+            activation=nn.Tanh(),
         )
 
-        self._actor_beta = _build_model(
-            n_inputs=observation_shape,
-            n_outputs=action_shape,
-            hiddens=hiddens,
-            activations=nn.Tanh(),
+        self.alpha_head = nn.Sequential(
+            nn.Tanh(),
+            nn.Linear(last_hidden, action_shape),
+            nn.Softplus()
+        )
+
+        self.beta_head = nn.Sequential(
+            nn.Tanh(),
+            nn.Linear(last_hidden, action_shape),
+            nn.Softplus()
         )
 
     def softplus(self, x):
@@ -131,8 +139,9 @@ class BetaAgent(nn.Module):
         return self.critic(x)
 
     def get_action_and_value(self, x, action=None):
-        alpha = self.softplus(self._actor_alpha(x))
-        beta = self.softplus(self._actor_beta(x))
+        x = self._actor_base(x)
+        alpha = self.alpha_head(x) + 1
+        beta = self.beta_head(x) + 1
 
         probs = Beta(alpha, beta)
         if action is None:
