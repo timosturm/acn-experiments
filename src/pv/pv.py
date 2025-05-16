@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta
+from typing import List
+import numpy as np
 import pandas as pd
+from icecream import ic
 
 
 def read_pv_data(csv: str) -> pd.DataFrame:
@@ -18,24 +21,23 @@ def read_pv_data(csv: str) -> pd.DataFrame:
     df.time = pd.to_datetime(df.time, format='%Y%m%d:%H%M', exact=True,
                              utc=True).map(lambda x: x.tz_convert("America/Los_Angeles"))
 
+    df = df.sort_values("time")
     return df
 
 
-def most_recent_P(df: pd.DataFrame, current_time: datetime) -> float:
-    """
-    Returns the last available power produced for a given time. I.e., all values
-    in the dataframe are assumed to apply until the next time is available.
+def get_most_recent_P(df: pd.DataFrame, timesteps_as_dt: List[datetime]) -> List[float]:
+    # Convert to numpy arrays for speed
+    time_array = df['time'].values
+    P_array = df['P'].values
 
-    Args:
-        df (pd.DataFrame): Pandas DataFrame
-        current_time (pd.Timestamp): Current time
+    timesteps_as_dt = np.array(timesteps_as_dt, dtype='datetime64[ns]')
 
-    Returns:
-        float: Last power produced by PV
-    """
+    # Use searchsorted to find indices of last known P values
+    indices = np.searchsorted(time_array, timesteps_as_dt, side='right') - 1
 
-    if current_time > df.time.max() + timedelta(hours=1) or current_time < df.time.min():
-        raise ValueError(
-            f"Requested time is out of range [{df.time.min()}, {df.time.max()}]; no data available for current_time={current_time}")
+    if (indices < 0).any() or (indices >= len(df)).any():
+        raise ValueError("Some requested times are out of data range.")
 
-    return df.loc[df.time <= current_time].P.values[-1]
+    pvs_in_W = P_array[indices]
+
+    return pvs_in_W

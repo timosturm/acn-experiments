@@ -12,7 +12,7 @@ def f(x, frequency=np.pi / 2):
 
     Args:
         x (_type_): _description_
-        b (_type_, optional): _description_. Defaults to np.pi/2.
+        b (_type_, optional): _description_. Defaults to np.pi/2. Such that the amplitude defaults to 1.
 
     Returns:
         _type_: _description_

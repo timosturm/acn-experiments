@@ -4,7 +4,6 @@ from datetime import timedelta
 from gymportal.sim.simulators_custom import EvaluationSimulator
 
 from .utils import A_to_W, W_to_A
-from .pv import most_recent_P
 import pandas as pd
 
 from datetime import timedelta
@@ -13,7 +12,7 @@ import numpy as np
 from gymportal.sim.simulators_custom import EvaluationSimulator
 
 from src.pv.utils import W_to_A
-from src.pv.pv import most_recent_P
+from src.pv.pv import get_most_recent_P
 import pandas as pd
 from .aux import grid_use, pv_utilization, unused_pv
 
@@ -29,10 +28,7 @@ def _pv_total(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> np.ndarray:
         sim.start + timedelta(minutes=m) for m in range(n_timesteps)
     ]
 
-    pvs_in_W = np.array(
-        [most_recent_P(df_pv, dt) for dt in timesteps_as_dt]
-    )
-
+    pvs_in_W = get_most_recent_P(df_pv, timesteps_as_dt)
     pvs_in_A = np.array([W_to_A(x, sim.network._voltages) for x in pvs_in_W])
 
     return pvs_in_A
@@ -40,22 +36,21 @@ def _pv_total(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> np.ndarray:
 # def used_pv_metric(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
 #     energy_total = _energy_total(sim)
 #     pv_total = _pv_total(sim, df_pv)
-    
+
 #     energy_from_pv = np.clip(pv_total, a_min=None, a_max=energy_total)
 
 
 # def used_grid_metric(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
 #     # energy_total = _energy_total(sim)
 #     # pv_total = _pv_total(sim, df_pv)
-    
+
 #     pv_total = _pv_total(sim, df_pv)
 #     pv_total_kW = np.array([A_to_W(v, voltages=) for v in pv_total])
 
 #     energy_from_grid = np.clip(energy_total - pv_total, a_min=0, a_max=None)
-# 
+#
 # def total_delivered_metric(sim: EvaluationSimulator) -> float:
     # pass
-
 
 
 def pv_utilization_metric(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
