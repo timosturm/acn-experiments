@@ -176,7 +176,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "RL-tuning-AV-beta"
+study_name: str = "RL-tuning-AV-beta-pv2"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
