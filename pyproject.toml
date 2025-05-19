@@ -12,7 +12,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = "==3.9.18"  # Adjust as needed
-gymportal = { git = "https://git.ies.uni-kassel.de/mhassouna/acnsimulation_gym", rev = "duration_multiplicator" }
+gymportal = { git = "https://ies_cred@git.ies.uni-kassel.de/mhassouna/acnsimulation_gym", rev = "duration_multiplicator" }
 gputil = "1.4.0"
 jupyter = "*"
 tqdm = "*"
