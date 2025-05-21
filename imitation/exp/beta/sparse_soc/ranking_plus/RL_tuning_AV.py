@@ -2,9 +2,10 @@ import json
 from optuna.pruners import MedianPruner
 import torch
 from tqdm import tqdm
+from src.actions import ranking_schedule_plus
 from src.cleanRL.agent import BetaAgent
 from src.cleanRL.environment import make_env
-from src.data import get_data, get_gmm, get_pv_data
+from src.data import get_data, get_gmm
 from src.observations import minute_observation_stay
 from src.pv.metrics import *
 from gymportal.evaluation import *
@@ -107,7 +108,7 @@ test_generator = SimGenerator(
 ic(test_generator.end_date + timedelta(days=1))
 
 
-df_pv = get_pv_data()
+df_pv = read_pv_data("../pv_150kW.csv")
 df_pv.describe()
 df_pv.P /= 54 / len(charging_network.station_ids)
 
@@ -126,7 +127,8 @@ observation_objects = [
 ]
 
 reward_objects = [
-    ScalableSimReward.scale(unused_pv_reward(df_pv), scale_factor=1),
+    pv_utilization_reward(df_pv),
+    unused_pv_reward(df_pv),
     sparse_soc_reward(),
 ]
 
@@ -139,7 +141,7 @@ steps_per_epoch = ic(
 
 train_config = {
     "observation_objects": observation_objects,
-    "action_object": zero_centered_single_charging_schedule_normalized(),
+    "action_object": ranking_schedule_plus(),
     "reward_objects": reward_objects,
     "simgenerator": train_generator,
     "meet_constraints": True,
@@ -166,7 +168,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "RL-tuning-AV-beta-pv1"
+study_name: str = "beta_sparse_soc_ranking_plus_AV"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(

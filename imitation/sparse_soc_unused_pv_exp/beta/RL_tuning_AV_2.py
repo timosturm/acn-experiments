@@ -135,17 +135,9 @@ reward_objects = [
 train_generator.seed = 8734956
 _ = train_generator.reset()
 
-pbar = tqdm(desc="Creating", unit=" simulations")
-steps_per_epoch = 0
-
-while train_generator._current_date != train_generator.start_date:
-    sim = train_generator.next()
-    steps_per_epoch += len(sim.event_queue.queue)
-
-    pbar.update(1)
-
-pbar.close()
-ic(steps_per_epoch)
+steps_per_epoch = ic(
+    get_steps_per_epoch(train_generator)
+)
 
 train_config = {
     "observation_objects": observation_objects,
