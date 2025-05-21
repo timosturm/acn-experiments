@@ -9,7 +9,7 @@ from sklearn.base import TransformerMixin, BaseEstimator
 import gymnasium as gym
 from acnportal.acnsim import Simulator
 from itertools import tee
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 from gymportal.evaluation import CanSchedule
 
 import gymnasium.spaces as spaces
@@ -257,8 +257,16 @@ def get_data(site: str, token: str = 'DEMO_TOKEN',
     return data
 
 
-def get_generator(site, model_path: str, battery_generator, token: Optional[str] = None, seed: Optional[int] = None,
-                  frequency_multiplicator=10, duration_multiplicator=1, file_path: str = None):
+def get_generator(
+    site,
+    model: Union[str, Tuple[Any, Any]],
+    battery_generator,
+    token: Optional[str] = None,
+    seed: Optional[int] = None,
+    frequency_multiplicator=10,
+    duration_multiplicator=1,
+    data: Optional[Union[str, pd.DataFrame]] = None,
+):
     """
 
     Args:
@@ -273,22 +281,30 @@ def get_generator(site, model_path: str, battery_generator, token: Optional[str]
 
     """
     timezone = pytz.timezone('America/Los_Angeles')
-    data = get_data(
-        site,
-        token,
-        drop_columns=(),
-        start=datetime(2018, 3, 25, tzinfo=timezone),
-        end=datetime(2020, 5, 31, tzinfo=timezone),
-        file_path=file_path,
-    )
+
+    if isinstance(data, str):
+        data = get_data(
+            site,
+            token,
+            drop_columns=(),
+            start=datetime(2018, 3, 25, tzinfo=timezone),
+            end=datetime(2020, 5, 31, tzinfo=timezone),
+            file_path=data,
+        )
+    else:
+        assert isinstance(data, pd.DataFrame)
+        assert "kWhDelivered" in data.columns
 
     X = extract_training_data(data)
 
-    try:
-        with open(model_path, "rb") as f:
-            gmm, scaler = pickle.load(f)
-    except FileNotFoundError:
-        print(f"No existing GMM found for site={site}!")
+    if isinstance(model, str):
+        try:
+            with open(model, "rb") as f:
+                gmm, scaler = pickle.load(f)
+        except FileNotFoundError:
+            print(f"No existing GMM found for site={site}!")
+    else:
+        gmm, scaler = model
 
     connection_time = X[:, 0]
 

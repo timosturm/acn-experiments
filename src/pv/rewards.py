@@ -21,7 +21,7 @@ from .aux import grid_use, pv_utilization, _save_divide, unused_pv
 
 
 def _energy_total(env: BaseSimInterface) -> np.ndarray:
-    timestep_now = env.timestep - 1
+    timestep_now = env.timestep
     timestep_prev = env.prev_timestep
 
     charging_rates = \

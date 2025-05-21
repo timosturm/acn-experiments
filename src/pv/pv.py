@@ -26,13 +26,10 @@ def read_pv_data(csv: str) -> pd.DataFrame:
 
 
 def get_most_recent_P(df: pd.DataFrame, timesteps_as_dt: List[datetime]) -> List[float]:
-    # Convert to numpy arrays for speed
     time_array = df['time'].values
     P_array = df['P'].values
-
     timesteps_as_dt = np.array(timesteps_as_dt, dtype='datetime64[ns]')
 
-    # Use searchsorted to find indices of last known P values
     indices = np.searchsorted(time_array, timesteps_as_dt, side='right') - 1
 
     if (indices < 0).any() or (indices >= len(df)).any():

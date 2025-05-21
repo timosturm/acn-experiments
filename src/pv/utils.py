@@ -26,7 +26,7 @@ def A_to_W(pv: float, voltages: Iterable[float]):
 
 
 def get_pvs_in_W(env: BaseSimInterface, df_pv):
-    timestep_now = env.timestep - 1
+    timestep_now = env.timestep
     timestep_prev = env.prev_timestep
     sim: Simulator = env.interface._simulator
 
