@@ -27,7 +27,7 @@ def _pairwise(iterable):
     return zip(a, b)
 
 
-def _build_model(n_inputs: int, hiddens: List[int], n_outputs: int, activation: nn.Module):
+def _build_model(n_inputs: int, hiddens: List[int], n_outputs: int, activation: nn.Module, batch_norm: bool = False):
     hiddens = [n_inputs] + hiddens
 
     # if isinstance(activations, nn.Module):
@@ -35,7 +35,11 @@ def _build_model(n_inputs: int, hiddens: List[int], n_outputs: int, activation: 
 
     hidden_layers = list(
         chain.from_iterable(
-            (nn.Linear(n_in, n_out), activation)
+            (
+                nn.Linear(n_in, n_out), activation, nn.BatchNorm1d(n_out)
+            ) if batch_norm else (
+                nn.Linear(n_in, n_out), activation
+            )
             for (n_in, n_out) in _pairwise(hiddens)
         )
     )
@@ -129,6 +133,62 @@ class BetaAgent(nn.Module):
 
         self.beta_head = nn.Sequential(
             nn.Tanh(),
+            nn.Linear(last_hidden, action_shape),
+            nn.Softplus()
+        )
+
+    def softplus(self, x):
+        return torch.log(1 + torch.exp(x)) + 1
+
+    def get_value(self, x):
+        return self.critic(x)
+
+    def get_action_and_value(self, x, action=None):
+        actor_x = self._actor_base(x)
+        alpha = self.alpha_head(actor_x) + 1
+        beta = self.beta_head(actor_x) + 1
+
+        probs = Beta(alpha, beta)
+        if action is None:
+            action = probs.rsample()
+
+        return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), self.critic(x)
+
+
+class BetaNormAgent(nn.Module):
+    """Used batch normalization in addition to beta distribution for outputs + LeakyReLU as activation.
+    """
+
+    def __init__(self, observation_shape: int, action_shape: int, hiddens: List[int] = [128, 128, 64]):
+        super().__init__()
+
+        self.critic = _build_model(
+            n_inputs=observation_shape,
+            n_outputs=1,
+            hiddens=hiddens,
+            activation=nn.LeakyReLU(),
+            batch_norm=True,
+        )
+
+        hiddens = np.array(hiddens)
+        last_hidden = hiddens[-1]
+
+        self._actor_base = _build_model(
+            n_inputs=observation_shape,
+            n_outputs=last_hidden,
+            hiddens=list(hiddens[:-1]),
+            activation=nn.LeakyReLU(),
+            batch_norm=True,
+        )
+
+        self.alpha_head = nn.Sequential(
+            nn.LeakyReLU(),
+            nn.Linear(last_hidden, action_shape),
+            nn.Softplus()
+        )
+
+        self.beta_head = nn.Sequential(
+            nn.LeakyReLU(),
             nn.Linear(last_hidden, action_shape),
             nn.Softplus()
         )
