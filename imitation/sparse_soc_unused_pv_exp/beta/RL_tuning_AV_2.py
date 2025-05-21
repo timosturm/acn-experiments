@@ -1,8 +1,10 @@
 import json
 from optuna.pruners import MedianPruner
 import torch
+from tqdm import tqdm
 from src.cleanRL.agent import BetaAgent
 from src.cleanRL.environment import make_env
+from src.data import get_data, get_gmm, get_pv_data
 from src.observations import minute_observation_stay
 from src.pv.metrics import *
 from gymportal.evaluation import *
@@ -59,13 +61,15 @@ battery_generator = CustomizableBatteryGenerator(
 
 # ev_generator = RealWorldGenerator(battery_generator=battery_generator, site='caltech', period=1)
 ev_generator = get_generator(
-    'caltech',
-    "../triple_gmm+sc.pkl",
-    battery_generator,
+    site='caltech',
+    # "../triple_gmm+sc.pkl",
+    model=get_gmm(),
+    battery_generator=battery_generator,
     seed=42,
     frequency_multiplicator=10,
     duration_multiplicator=2,
-    file_path="../caltech_2018-03-25 00:00:00-07:53_2020-05-31 00:00:00-07:53_False.csv"
+    # data="../caltech_2018-03-25 00:00:00-07:53_2020-05-31 00:00:00-07:53_False.csv"
+    data=get_data(),
 )
 
 train_generator = SimGenerator(
@@ -105,7 +109,7 @@ test_generator = SimGenerator(
 ic(test_generator.end_date + timedelta(days=1))
 
 
-df_pv = read_pv_data("../pv_150kW.csv")
+df_pv = get_pv_data()
 df_pv.describe()
 df_pv.P /= 54 / len(charging_network.station_ids)
 
@@ -124,27 +128,23 @@ observation_objects = [
 ]
 
 reward_objects = [
-    # pv_utilization_reward(df_pv),
-    ScalableSimReward(unused_pv_reward(df_pv), scale_factor=2),
+    ScalableSimReward.scale(unused_pv_reward(df_pv), scale_factor=2),
     sparse_soc_reward(),
 ]
 
 train_generator.seed = 8734956
 _ = train_generator.reset()
 
-iter = 0
+pbar = tqdm(desc="Creating", unit=" simulations")
+steps_per_epoch = 0
 
 while train_generator._current_date != train_generator.start_date:
-    _ = train_generator.next()
+    sim = train_generator.next()
+    steps_per_epoch += len(sim.event_queue.queue)
 
-    ic(iter)
-    ic(train_generator._current_date)
-    iter += 1
+    pbar.update(1)
 
-steps_per_epoch = 0
-for eval_sim in train_generator._sim_memory:
-    steps_per_epoch += len(eval_sim.event_queue.queue)
-
+pbar.close()
 ic(steps_per_epoch)
 
 train_config = {
