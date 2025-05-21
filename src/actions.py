@@ -1,3 +1,4 @@
+from icecream import ic
 from gymportal.auxilliaries.interfaces import Interface, GymTrainedInterface
 from gymportal.environment import SimReward, BaseSimInterface
 from acnportal.algorithms import SortedSchedulingAlgo
@@ -133,6 +134,66 @@ def zero_centered_single_charging_schedule_normalized_clip(discrete: bool = Fals
         return out
 
     name = "zero-centered single schedule normalized clip"
+
+    single = SimAction(
+        space_function=space_function,
+        to_schedule=to_schedule,
+        name=name
+    )
+
+    multi = SimAction(
+        space_function=lambda iface: _map_single_to_multi_action_space(
+            space_function(iface), iface),
+        to_schedule=lambda iface, action: to_schedule(iface,
+                                                      np.array([action[id] for id in iface.station_ids]).flatten()),
+        name=name
+    )
+
+    return SimActionFactory(single_sim_action=single, multi_sim_action=multi)
+
+
+def one_for_all_schedule(discrete: bool = False) -> SimActionFactory:
+    # """ Generates a SimAction instance that wraps functions to handle
+    # actions taking the form of a vector of pilot signals. For this
+    # action type, actions are assumed to be centered about 0, in that
+    # an action of 0 corresponds to a pilot signal of max_rate/2. So,
+    # to convert to a schedule, actions need to be shifted by a certain
+    # amount and converted to a dictionary.
+
+    # The agents actions are in the interval [-1, 1] for each station. This is transformed to the appropriate interval
+    # of currents [A] that the respective station can provide. E.g., if the station can provide from 6A to 32A, then -1
+    # corresponds to 6A and 1 corresponds to 32A.
+    # """
+
+    dtype = int if discrete else np.float32
+
+    def space_function(iface: GymTrainedInterface) -> spaces.Box:
+        return spaces.Box(
+            low=np.array([-1], dtype=dtype),
+            high=np.array([1], dtype=dtype),
+            shape=(1,),
+            dtype=dtype,
+        )
+
+    def to_schedule(
+            iface: GymTrainedInterface, action: np.ndarray
+    ) -> Dict[str, List[np.float32]]:
+        min_rates, max_rates = _get_min_max_rates(iface)
+        num_evses: int = len(iface.station_ids)
+
+        # Repeat the same action for each EVSE
+        action = action.repeat(num_evses)
+        normalized_action = min_max_normalization(new_min=min_rates, new_max=max_rates, old_min=-1, old_max=1,
+                                                  values=action)
+
+        out = {
+            iface.station_ids[i]: [normalized_action[i]]
+            for i in range(len(normalized_action))
+        }
+
+        return out
+
+    name = "zero-centered single schedule normalized"
 
     single = SimAction(
         space_function=space_function,

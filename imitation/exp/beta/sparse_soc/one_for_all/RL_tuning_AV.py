@@ -2,7 +2,7 @@ import json
 from optuna.pruners import MedianPruner
 import torch
 from tqdm import tqdm
-from src.actions import ranking_schedule_plus
+from src.actions import one_for_all_schedule, ranking_schedule_plus
 from src.cleanRL.agent import BetaAgent
 from src.cleanRL.environment import make_env
 from src.data import get_data, get_gmm, get_pv_data
@@ -141,7 +141,7 @@ steps_per_epoch = ic(
 
 train_config = {
     "observation_objects": observation_objects,
-    "action_object": ranking_schedule_plus(),
+    "action_object": one_for_all_schedule(),
     "reward_objects": reward_objects,
     "simgenerator": train_generator,
     "meet_constraints": True,
@@ -168,7 +168,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "beta_sparse_soc_ranking_plus_AV"
+study_name: str = "beta_sparse_soc_one_for_all_AV"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
