@@ -1,3 +1,4 @@
+from icecream import ic
 from acnportal.acndata import DataClient
 import pandas as pd
 from datetime import datetime
@@ -16,6 +17,7 @@ import gymnasium.spaces as spaces
 from gymnasium.wrappers import FlattenObservation
 from gymportal.environment import SingleAgentSimEnv
 from gymportal.auxilliaries.interfaces_custom import EvaluationGymTrainingInterface
+from tqdm import tqdm
 
 
 CC_pod_ids = [
@@ -84,6 +86,20 @@ def _pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
+
+
+def get_steps_per_epoch(train_generator):
+    pbar = tqdm(desc="Creating", unit=" simulations")
+    steps_per_epoch = 0
+
+    while train_generator._current_date != train_generator.start_date:
+        sim = train_generator.next()
+        steps_per_epoch += len(sim.event_queue.queue)
+
+        pbar.update(1)
+
+    pbar.close()
+    return steps_per_epoch
 
 
 def evaluate_model(model: CanSchedule, eval_env: gym.Env, seed: Optional[int] = None) -> Tuple[Simulator, float]:
