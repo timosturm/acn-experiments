@@ -70,9 +70,12 @@ def train_ppo(
 
             # ALGO LOGIC: action logic
             with torch.no_grad():
+                agent.eval()
                 action, logprob, _, value = agent.get_action_and_value(
                     next_obs)
                 values[step] = value.flatten()
+                agent.train()
+
             actions[step] = action
             logprobs[step] = logprob
 
@@ -108,6 +111,7 @@ def train_ppo(
 
         # bootstrap value if not done
         with torch.no_grad():
+            agent.eval()
             next_value = agent.get_value(next_obs).reshape(1, -1)
             advantages = torch.zeros_like(rewards).to(device)
             lastgaelam = 0
@@ -123,6 +127,7 @@ def train_ppo(
                 advantages[t] = lastgaelam = delta + args.gamma * \
                     args.gae_lambda * nextnonterminal * lastgaelam
             returns = advantages + values
+            agent.train()
 
         # flatten the batch
         b_obs = obs.reshape((-1,) + envs.single_observation_space.shape)
