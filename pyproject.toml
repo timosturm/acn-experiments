@@ -21,6 +21,7 @@ seaborn = "^0.13.2"
 absl-py = "2.1.0"
 pandas = "2.2.2"
 wandb = "^0.19.11"
+optuna = "^4.3.0"
 
 [build-system]
 requires = ["poetry-core"]
