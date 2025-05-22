@@ -168,7 +168,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "beta_sparse_soc_centered_AV"
+study_name: str = "betaNorm_sparse_soc_centered_AV"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
@@ -180,13 +180,13 @@ args = MyArgs(
         # TODO Store baseline as a parameter
         train_ds="AV_46_weeks_training.parquet.gzip",
         validation_ds="AV_46_weeks_validation.parquet.gzip",
-        agent_class=BetaAgent,
+        agent_class=BetaNormAgent,
     ),
     eval=EvalArgs(
         make_env=lambda: make_env(validation_config, 0.99, 0, 930932)(),
         metrics=metrics,
         hiddens=hiddens,
-        agent_class=BetaAgent,
+        agent_class=BetaNormAgent,
     ),
     rl=RLArgs(
         total_timesteps=steps_per_epoch * 16,
@@ -194,7 +194,7 @@ args = MyArgs(
         metrics=metrics,
         # state_dict=best_state_dict,
         hiddens=hiddens,
-        agent_class=BetaAgent,
+        agent_class=BetaNormAgent,
     ),
 )
 

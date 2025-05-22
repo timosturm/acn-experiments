@@ -3,7 +3,7 @@ from optuna.pruners import MedianPruner
 import torch
 from tqdm import tqdm
 from src.actions import ranking_schedule_plus
-from src.cleanRL.agent import BetaAgent, BetaNormAgent
+from src.cleanRL.agent import Agent, BetaAgent, BetaNormAgent
 from src.cleanRL.environment import make_env
 from src.data import get_data, get_gmm, get_pv_data
 from src.observations import minute_observation_stay
@@ -168,7 +168,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "beta_sparse_soc_centered_AV"
+study_name: str = "gauss_sparse_soc_centered_AV"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
@@ -180,13 +180,13 @@ args = MyArgs(
         # TODO Store baseline as a parameter
         train_ds="AV_46_weeks_training.parquet.gzip",
         validation_ds="AV_46_weeks_validation.parquet.gzip",
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
     eval=EvalArgs(
         make_env=lambda: make_env(validation_config, 0.99, 0, 930932)(),
         metrics=metrics,
         hiddens=hiddens,
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
     rl=RLArgs(
         total_timesteps=steps_per_epoch * 16,
@@ -194,7 +194,7 @@ args = MyArgs(
         metrics=metrics,
         # state_dict=best_state_dict,
         hiddens=hiddens,
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
 )
 
