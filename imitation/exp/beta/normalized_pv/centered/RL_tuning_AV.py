@@ -142,7 +142,7 @@ steps_per_epoch = ic(
 
 train_config = {
     "observation_objects": observation_objects,
-    "action_object": zero_centered_single_charging_schedule_normalized(),
+    "action_object": beta_schedule_normalized(),
     "reward_objects": reward_objects,
     "simgenerator": train_generator,
     "meet_constraints": True,
