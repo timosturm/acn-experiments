@@ -80,7 +80,13 @@ def pv_observation_mean_normalized(df_pv: pd.DataFrame) -> SimObservationFactory
         pvs_in_A = [W_to_A(x, iface._simulator.network._voltages)
                     for x in pvs_in_W]
 
-        return np.mean(pvs_in_A)
+        return min_max_normalization(
+            old_min=0,
+            old_max=W_to_A(df_pv.P.max(), iface._simulator._voltages),
+            new_min=-1,
+            new_max=1,
+            values=np.mean(pvs_in_A)
+        ).astype(np.float32)
 
     single = SimObservation(
         lambda iface: spaces.Box(low=0, high=np.inf, shape=(1,),
@@ -114,12 +120,18 @@ def pv_observation_normalized(df_pv: pd.DataFrame) -> SimObservationFactory:
             iface.current_datetime  # - timedelta(hours=h) for h in range(5)
         ]
 
-        pvs_in_W = get_most_recent_P(df_pv, timesteps_as_dt) / df_pv.P.max()
+        pvs_in_W = get_most_recent_P(df_pv, timesteps_as_dt)
 
         pvs_in_A = [W_to_A(x, iface._simulator.network._voltages)
                     for x in pvs_in_W]
 
-        return np.mean(pvs_in_A)
+        return min_max_normalization(
+            old_min=0,
+            old_max=W_to_A(df_pv.P.max(), iface._simulator._voltages),
+            new_min=-1,
+            new_max=1,
+            values=np.mean(pvs_in_A)
+        ).astype(np.float32)
 
     single = SimObservation(
         lambda iface: spaces.Box(low=0, high=np.inf, shape=(1,),
