@@ -2,7 +2,7 @@ import json
 from optuna.pruners import MedianPruner
 import torch
 from tqdm import tqdm
-from src.actions import ranking_schedule_plus
+from src.actions import beta_schedule_normalized, beta_ranking_plus
 from src.cleanRL.agent import BetaAgent, BetaNormAgent
 from src.cleanRL.environment import make_env
 from src.data import get_data, get_gmm, get_pv_data
@@ -10,7 +10,7 @@ from src.observations import minute_observation_stay
 from src.pv.metrics import *
 from gymportal.evaluation import *
 from src.pv.rewards import *
-from src.pv.observations import pv_observation_mean
+from src.pv.observations import pv_observation_mean, pv_observation_mean_normalized, pv_observation_normalized
 from gymportal.environment import *
 from src.pv.pv import read_pv_data
 import pytz
@@ -67,7 +67,7 @@ ev_generator = get_generator(
     battery_generator=battery_generator,
     seed=42,
     frequency_multiplicator=10,
-    duration_multiplicator=2,
+    duration_multiplicator=1,
     data=get_data(),
 )
 
@@ -123,7 +123,8 @@ observation_objects = [
     energy_delivered_observation_normalized(),
     num_active_stations_observation_normalized(),
     pilot_signals_observation_normalized(),
-    pv_observation_mean(df_pv),
+    pv_observation_mean_normalized(df_pv),
+    pv_observation_normalized(df_pv),
 ]
 
 reward_objects = [
@@ -141,7 +142,7 @@ steps_per_epoch = ic(
 
 train_config = {
     "observation_objects": observation_objects,
-    "action_object": zero_centered_single_charging_schedule_normalized(),
+    "action_object": beta_schedule_normalized(),
     "reward_objects": reward_objects,
     "simgenerator": train_generator,
     "meet_constraints": True,
@@ -168,7 +169,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "betaNorm_sparse_soc_centered_AV"
+study_name: str = "betaN_pv_norm_centered_AV"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
