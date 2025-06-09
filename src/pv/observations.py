@@ -6,14 +6,11 @@ from .utils import W_to_A
 from .pv import get_most_recent_P
 
 import numpy as np
-from acnportal.acnsim.interface import SessionInfo
 from gymnasium import spaces
 
 from gymportal.auxilliaries.interfaces import GymTrainedInterface
 from gymportal.environment.normalization import min_max_normalization
-from gymportal.environment.observations.auxilliaries import _single_ev_observation, _multi_ev_observation, \
-    _single_constraints_observation, _multi_constraints_observation, _single_to_multi_obs, cyclic_transform, \
-    _cyclic_ev_observation, extract_minute_of_day, _map_to_agent_ids
+from gymportal.environment.observations.auxilliaries import _single_to_multi_obs, _map_to_agent_ids
 from gymportal.environment.observations.sim_observation import SimObservation, SimObservationFactory
 
 from icecream import ic
@@ -82,7 +79,7 @@ def pv_observation_mean_normalized(df_pv: pd.DataFrame) -> SimObservationFactory
 
         return min_max_normalization(
             old_min=0,
-            old_max=W_to_A(df_pv.P.max(), iface._simulator._voltages),
+            old_max=W_to_A(df_pv.P.max(), iface._simulator.network._voltages),
             new_min=-1,
             new_max=1,
             values=np.mean(pvs_in_A)
@@ -127,7 +124,7 @@ def pv_observation_normalized(df_pv: pd.DataFrame) -> SimObservationFactory:
 
         return min_max_normalization(
             old_min=0,
-            old_max=W_to_A(df_pv.P.max(), iface._simulator._voltages),
+            old_max=W_to_A(df_pv.P.max(), iface._simulator.network._voltages),
             new_min=-1,
             new_max=1,
             values=np.mean(pvs_in_A)
