@@ -333,7 +333,7 @@ def beta_ranking_plus() -> SimActionFactory:
         scheduler.register_interface(iface)
 
         space = space_function(iface)
-        cut_off = (space.low + space.high) * 0.5
+        cut_off = (space.low + space.high) * 0.2
         allowed_stations = list(np.array(iface.station_ids)[action > cut_off])
         sessions = [s for s in iface.active_sessions(
         ) if s.station_id in allowed_stations]
