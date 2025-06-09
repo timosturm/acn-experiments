@@ -10,7 +10,7 @@ from src.observations import minute_observation_stay
 from src.pv.metrics import *
 from gymportal.evaluation import *
 from src.pv.rewards import *
-from src.pv.observations import pv_observation_mean
+from src.pv.observations import pv_observation_mean, pv_observation_mean_normalized, pv_observation_normalized
 from gymportal.environment import *
 from src.pv.pv import read_pv_data
 import pytz
@@ -67,7 +67,7 @@ ev_generator = get_generator(
     battery_generator=battery_generator,
     seed=42,
     frequency_multiplicator=10,
-    duration_multiplicator=2,
+    duration_multiplicator=1,
     data=get_data(),
 )
 
@@ -123,7 +123,8 @@ observation_objects = [
     energy_delivered_observation_normalized(),
     num_active_stations_observation_normalized(),
     pilot_signals_observation_normalized(),
-    pv_observation_mean(df_pv),
+    pv_observation_mean_normalized(df_pv),
+    pv_observation_normalized(df_pv),
 ]
 
 reward_objects = [
@@ -168,7 +169,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "gauss_sparse_soc_centered_AV"
+study_name: str = "gauss_pv_norm_centered_AV_d=1"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
