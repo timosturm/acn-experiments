@@ -1,7 +1,7 @@
 from icecream import ic
 from gymportal.auxilliaries.interfaces import Interface, GymTrainedInterface
 from gymportal.environment import SimReward, BaseSimInterface
-from acnportal.algorithms import SortedSchedulingAlgo
+from acnportal.algorithms import SortedSchedulingAlgo, first_come_first_served
 from typing import List, Dict
 from gymnasium import spaces
 from acnportal.acnsim.interface import SessionInfo
@@ -152,7 +152,7 @@ def zero_centered_single_charging_schedule_normalized_clip(discrete: bool = Fals
     return SimActionFactory(single_sim_action=single, multi_sim_action=multi)
 
 
-def one_for_all_schedule(discrete: bool = False) -> SimActionFactory:
+def beta_one_for_all_schedule(discrete: bool = False) -> SimActionFactory:
     # """ Generates a SimAction instance that wraps functions to handle
     # actions taking the form of a vector of pilot signals. For this
     # action type, actions are assumed to be centered about 0, in that
@@ -169,7 +169,7 @@ def one_for_all_schedule(discrete: bool = False) -> SimActionFactory:
 
     def space_function(iface: GymTrainedInterface) -> spaces.Box:
         return spaces.Box(
-            low=np.array([-1], dtype=dtype),
+            low=np.array([0], dtype=dtype),
             high=np.array([1], dtype=dtype),
             shape=(1,),
             dtype=dtype,
@@ -180,11 +180,17 @@ def one_for_all_schedule(discrete: bool = False) -> SimActionFactory:
     ) -> Dict[str, List[np.float32]]:
         min_rates, max_rates = _get_min_max_rates(iface)
         num_evses: int = len(iface.station_ids)
+        space = space_function(iface)
 
         # Repeat the same action for each EVSE
         action = action.repeat(num_evses)
-        normalized_action = min_max_normalization(new_min=min_rates, new_max=max_rates, old_min=-1, old_max=1,
-                                                  values=action)
+        normalized_action = min_max_normalization(
+            new_min=min_rates,
+            new_max=max_rates,
+            old_min=space.low,
+            old_max=space.high,
+            values=action,
+        )
 
         out = {
             iface.station_ids[i]: [normalized_action[i]]
@@ -283,7 +289,7 @@ def ranking_schedule() -> SimActionFactory:
     return SimActionFactory(single_sim_action=single, multi_sim_action=multi)
 
 
-def ranking_schedule_plus() -> SimActionFactory:
+def beta_ranking_plus() -> SimActionFactory:
     """ Generates a SimAction instance that wraps functions to handle
     actions taking the form of a vector of pilot signals. For this
     action type, actions are assumed to be centered about 0, in that
@@ -302,7 +308,7 @@ def ranking_schedule_plus() -> SimActionFactory:
         num_evses: int = len(iface.station_ids)
 
         return spaces.Box(
-            low=np.array([-1] * num_evses, dtype=dtype),
+            low=np.array([0] * num_evses, dtype=dtype),
             high=np.array([1] * num_evses, dtype=dtype),
             shape=(num_evses,),
             dtype=dtype,
@@ -326,7 +332,9 @@ def ranking_schedule_plus() -> SimActionFactory:
         scheduler = SortedSchedulingAlgo(sort_fn=sort_fn)
         scheduler.register_interface(iface)
 
-        allowed_stations = list(np.array(iface.station_ids)[action > 0])
+        space = space_function(iface)
+        cut_off = (space.low + space.high) * 0.5
+        allowed_stations = list(np.array(iface.station_ids)[action > cut_off])
         sessions = [s for s in iface.active_sessions(
         ) if s.station_id in allowed_stations]
 

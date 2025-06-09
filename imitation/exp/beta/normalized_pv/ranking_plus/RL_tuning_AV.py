@@ -2,7 +2,7 @@ import json
 from optuna.pruners import MedianPruner
 import torch
 from tqdm import tqdm
-from src.actions import ranking_schedule_plus
+from src.actions import beta_ranking_plus, ranking_schedule
 from src.cleanRL.agent import BetaAgent
 from src.cleanRL.environment import make_env
 from src.data import get_data, get_gmm, get_pv_data
@@ -67,7 +67,7 @@ ev_generator = get_generator(
     battery_generator=battery_generator,
     seed=42,
     frequency_multiplicator=10,
-    duration_multiplicator=2,
+    duration_multiplicator=1,
     data=get_data(),
 )
 
@@ -142,7 +142,7 @@ steps_per_epoch = ic(
 
 train_config = {
     "observation_objects": observation_objects,
-    "action_object": ranking_schedule_plus(),
+    "action_object": beta_ranking_plus(),
     "reward_objects": reward_objects,
     "simgenerator": train_generator,
     "meet_constraints": True,
