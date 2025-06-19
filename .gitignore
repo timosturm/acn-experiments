@@ -248,3 +248,5 @@ wandb/
 lightning_logs/
 *.pkl
 nohup.out
+*.png
+*.ansi
