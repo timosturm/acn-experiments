@@ -1,13 +1,16 @@
 import json
 from optuna.pruners import MedianPruner
 import torch
-from src.cleanRL.agent import BetaAgent
+from tqdm import tqdm
+from src.actions import beta_schedule_normalized, beta_ranking_plus
+from src.cleanRL.agent import Agent, BetaAgent, BetaNormAgent
 from src.cleanRL.environment import make_env
+from src.data import get_data, get_gmm, get_pv_data
 from src.observations import minute_observation_stay
 from src.pv.metrics import *
 from gymportal.evaluation import *
 from src.pv.rewards import *
-from src.pv.observations import pv_observation_mean
+from src.pv.observations import pv_observation_mean, pv_observation_mean_normalized, pv_observation_normalized
 from gymportal.environment import *
 from src.pv.pv import read_pv_data
 import pytz
@@ -23,7 +26,7 @@ from icecream import ic
 from src.imitation.args import MyArgs, ImitationArgs, RLArgs, EvalArgs
 from src.imitation.objective import objective_IL, objective_RL, objective_combined
 from src.rewards import sparse_soc_reward
-from src.utils import AV_pod_ids, get_generator, get_power_function
+from src.utils import AV_pod_ids, get_generator, get_power_function, get_steps_per_epoch
 
 
 # This is importent when we want to call this as a python script, because jupyter naturally has a higher recursion depth
@@ -59,13 +62,13 @@ battery_generator = CustomizableBatteryGenerator(
 
 # ev_generator = RealWorldGenerator(battery_generator=battery_generator, site='caltech', period=1)
 ev_generator = get_generator(
-    'caltech',
-    "../triple_gmm+sc.pkl",
-    battery_generator,
+    site='caltech',
+    model=get_gmm(),
+    battery_generator=battery_generator,
     seed=42,
     frequency_multiplicator=10,
-    duration_multiplicator=2,
-    file_path="../caltech_2018-03-25 00:00:00-07:53_2020-05-31 00:00:00-07:53_False.csv"
+    duration_multiplicator=1,
+    data=get_data(),
 )
 
 train_generator = SimGenerator(
@@ -105,7 +108,7 @@ test_generator = SimGenerator(
 ic(test_generator.end_date + timedelta(days=1))
 
 
-df_pv = read_pv_data("../pv_150kW.csv")
+df_pv = get_pv_data()
 df_pv.describe()
 df_pv.P /= 54 / len(charging_network.station_ids)
 
@@ -120,7 +123,8 @@ observation_objects = [
     energy_delivered_observation_normalized(),
     num_active_stations_observation_normalized(),
     pilot_signals_observation_normalized(),
-    pv_observation_mean(df_pv),
+    pv_observation_mean_normalized(df_pv),
+    pv_observation_normalized(df_pv),
 ]
 
 reward_objects = [
@@ -132,24 +136,13 @@ reward_objects = [
 train_generator.seed = 8734956
 _ = train_generator.reset()
 
-iter = 0
-
-while train_generator._current_date != train_generator.start_date:
-    _ = train_generator.next()
-
-    ic(iter)
-    ic(train_generator._current_date)
-    iter += 1
-
-steps_per_epoch = 0
-for eval_sim in train_generator._sim_memory:
-    steps_per_epoch += len(eval_sim.event_queue.queue)
-
-ic(steps_per_epoch)
+steps_per_epoch = ic(
+    get_steps_per_epoch(train_generator)
+)
 
 train_config = {
     "observation_objects": observation_objects,
-    "action_object": zero_centered_single_charging_schedule_normalized(),
+    "action_object": beta_schedule_normalized(),
     "reward_objects": reward_objects,
     "simgenerator": train_generator,
     "meet_constraints": True,
@@ -176,7 +169,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "RL-tuning-AV-beta"
+study_name: str = "gauss_sparse_centered_AV"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
@@ -188,13 +181,13 @@ args = MyArgs(
         # TODO Store baseline as a parameter
         train_ds="AV_46_weeks_training.parquet.gzip",
         validation_ds="AV_46_weeks_validation.parquet.gzip",
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
     eval=EvalArgs(
         make_env=lambda: make_env(validation_config, 0.99, 0, 930932)(),
         metrics=metrics,
         hiddens=hiddens,
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
     rl=RLArgs(
         total_timesteps=steps_per_epoch * 16,
@@ -202,7 +195,7 @@ args = MyArgs(
         metrics=metrics,
         # state_dict=best_state_dict,
         hiddens=hiddens,
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
 )
 

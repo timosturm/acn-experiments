@@ -2,8 +2,8 @@ import json
 from optuna.pruners import MedianPruner
 import torch
 from tqdm import tqdm
-from src.actions import ranking_schedule_plus
-from src.cleanRL.agent import BetaAgent, BetaNormAgent
+from src.actions import beta_one_for_all_schedule, beta_ranking_plus
+from src.cleanRL.agent import Agent, BetaAgent
 from src.cleanRL.environment import make_env
 from src.data import get_data, get_gmm, get_pv_data
 from src.observations import minute_observation_stay
@@ -67,7 +67,7 @@ ev_generator = get_generator(
     battery_generator=battery_generator,
     seed=42,
     frequency_multiplicator=10,
-    duration_multiplicator=2,
+    duration_multiplicator=1,
     data=get_data(),
 )
 
@@ -142,7 +142,7 @@ steps_per_epoch = ic(
 
 train_config = {
     "observation_objects": observation_objects,
-    "action_object": beta_schedule_normalized(),
+    "action_object": beta_one_for_all_schedule(),
     "reward_objects": reward_objects,
     "simgenerator": train_generator,
     "meet_constraints": True,
@@ -169,7 +169,7 @@ metrics = {
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
 
-study_name: str = "beta_pv_norm_centered_AV"
+study_name: str = "gauss_sparse_one_AV"
 hiddens = [2048, 512, 128]
 
 args = MyArgs(
@@ -181,13 +181,13 @@ args = MyArgs(
         # TODO Store baseline as a parameter
         train_ds="AV_46_weeks_training.parquet.gzip",
         validation_ds="AV_46_weeks_validation.parquet.gzip",
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
     eval=EvalArgs(
         make_env=lambda: make_env(validation_config, 0.99, 0, 930932)(),
         metrics=metrics,
         hiddens=hiddens,
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
     rl=RLArgs(
         total_timesteps=steps_per_epoch * 16,
@@ -195,7 +195,7 @@ args = MyArgs(
         metrics=metrics,
         # state_dict=best_state_dict,
         hiddens=hiddens,
-        agent_class=BetaAgent,
+        agent_class=Agent,
     ),
 )
 
