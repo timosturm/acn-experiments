@@ -60,13 +60,13 @@ def validate_on_env(args: EvalArgs, state_dict: OrderedDict) -> float:
     return eval_sim, new_return
 
 
-def clean_up(args: MyArgs, writer: SummaryWriter, run):
+def clean_up(args: MyArgs, run):
 
     args.rl.envs.close()
     args.eval.env.close()
 
-    writer.flush()
-    writer.close()
+    # writer.flush()
+    # writer.close()
 
     run.finish()
 

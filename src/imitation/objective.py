@@ -294,7 +294,7 @@ def objective_RL(
 
     run_name = f"{args.exp_name}__{uuid4()}"
 
-    wandb.init(
+    run = wandb.init(
         project=args.wandb_project_name,
         entity=args.wandb_entity,
         sync_tensorboard=True,
@@ -303,13 +303,6 @@ def objective_RL(
         save_code=True,
         group=args.wandb_group,
         tags=args.wandb_tags,
-    )
-
-    writer = SummaryWriter(f"runs/{run_name}")
-    writer.add_text(
-        "hyperparameters",
-        "|param|value|\n|-|-|\n%s" % (
-            "\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
     )
 
     # TRY NOT TO MODIFY: seeding
@@ -336,7 +329,7 @@ def objective_RL(
 
     old_return = 0
     # Reinforcement Learning
-    for i, (global_step, state_dict) in enumerate(train_ppo(args.rl, writer, device, state_dict=args.rl.state_dict)):
+    for i, (global_step, state_dict) in enumerate(train_ppo(args.rl, run, device, state_dict=args.rl.state_dict)):
         # necessary variables (num_steps) are populated by "train_ppo"
         # steps_per_epoch = (args.rl.num_iterations * args.rl.num_steps) / 20
         # steps_per_epoch = args.rl.total_timesteps / 20
@@ -347,11 +340,14 @@ def objective_RL(
         # because step_size is a power of 2, i.e., 2**6; and the maximum step_size is 2048 train_ppo yields at least every 2048 steps
         if global_step % 2048 == 0:
             eval_sim, new_return = validate_on_env(args.eval, state_dict)
-            writer.add_scalar("eval/return", new_return, global_step)
-
-            for metric_name, f in args.eval.metrics.items():
-                writer.add_scalar(
-                    f"eval/{metric_name}", f(eval_sim), global_step)
+            run.log(
+                {
+                    "eval/return": new_return,
+                } | {
+                    f"eval/{metric_name}":  f(eval_sim) for metric_name, f in args.eval.metrics.items()
+                },
+                step=global_step,
+            )
 
             metadata |= {
                 "rl": {"return": new_return, "global_step": global_step}
@@ -366,11 +362,11 @@ def objective_RL(
 
             trial.report(new_return, i)
             if trial.should_prune():
-                clean_up(args, writer)
+                clean_up(args, run)
                 raise TrialPruned()
 
             old_return = new_return
 
-    clean_up(args, writer, wandb.run)
+    clean_up(args, run)
 
     return best_return

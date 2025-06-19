@@ -1,4 +1,3 @@
-from torch.utils.tensorboard import SummaryWriter
 
 
 from typing import Generator, Optional, OrderedDict, Tuple
@@ -10,7 +9,6 @@ import gymnasium as gym
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from icecream import ic
 from src.imitation.args import RLArgs
@@ -18,7 +16,7 @@ from src.imitation.args import RLArgs
 
 def train_ppo(
     args: RLArgs,
-    writer: SummaryWriter,
+    run,
     device: str,
     state_dict: Optional[OrderedDict],
 ) -> Generator[Tuple[int, OrderedDict], None, None]:
@@ -82,6 +80,7 @@ def train_ppo(
             # TRY NOT TO MODIFY: execute the game and log data.
             next_obs, reward, terminations, truncations, infos = envs.step(
                 action.cpu().numpy())
+
             next_done = np.logical_or(terminations, truncations)
             rewards[step] = torch.tensor(reward).to(device).view(-1)
             next_obs, next_done = torch.Tensor(next_obs).to(
@@ -92,10 +91,13 @@ def train_ppo(
                     if info and "episode" in info:
                         print(
                             f"global_step={global_step}, episodic_return={info['episode']['r']}")
-                        writer.add_scalar("charts/episodic_return",
-                                          info["episode"]["r"], global_step)
-                        writer.add_scalar("charts/episodic_length",
-                                          info["episode"]["l"], global_step)
+                        run.log(
+                            {
+                                "charts/episodic_return": info["episode"]["r"],
+                                "charts/episodic_length": info["episode"]["l"],
+                            },
+                            step=global_step,
+                        )
 
             # log metrics for training
             if torch.any(next_done):
@@ -104,10 +106,13 @@ def train_ppo(
                     if info and "acn_interface" in info:
                         sims.append(info["acn_interface"]._simulator)
 
-                for metric_name, f in args.metrics.items():
-                    value = np.mean([f(sim) for sim in sims])
-                    writer.add_scalar(
-                        f"train/{metric_name}", value, global_step)
+                run.log(
+                    {
+                        f"train/{metric_name}": np.mean([f(sim) for sim in sims])
+                        for metric_name, f in args.metrics.items()
+                    },
+                    step=global_step,
+                )
 
         # bootstrap value if not done
         with torch.no_grad():
@@ -203,19 +208,20 @@ def train_ppo(
             np.var(y_true - y_pred) / var_y
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
-        writer.add_scalar("charts/learning_rate",
-                          optimizer.param_groups[0]["lr"], global_step)
-        writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
-        writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
-        writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
-        writer.add_scalar("losses/old_approx_kl",
-                          old_approx_kl.item(), global_step)
-        writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
-        writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
-        writer.add_scalar("losses/explained_variance",
-                          explained_var, global_step)
         print("SPS:", int(global_step / (time.time() - start_time)))
-        writer.add_scalar("charts/SPS", int(global_step /
-                                            (time.time() - start_time)), global_step)
+        run.log(
+            {
+                "charts/learning_rate": optimizer.param_groups[0]["lr"],
+                "losses/value_loss": v_loss.item(),
+                "losses/policy_loss": pg_loss.item(),
+                "losses/entropy": entropy_loss.item(),
+                "losses/old_approx_kl": old_approx_kl.item(),
+                "losses/approx_kl": approx_kl.item(),
+                "losses/clipfrac": np.mean(clipfracs),
+                "losses/explained_variance": explained_var,
+                "charts/SPS": int(global_step / (time.time() - start_time)),
+            },
+            step=global_step,
+        )
 
         yield global_step, agent.state_dict()

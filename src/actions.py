@@ -370,7 +370,7 @@ def beta_schedule_normalized(discrete: bool = False) -> SimActionFactory:
     to convert to a schedule, actions need to be shifted by a certain
     amount and converted to a dictionary.
 
-    The agents actions are in the interval [-1, 1] for each station. This is transformed to the appropriate interval
+    The agents actions are in the interval [0, 1] for each station. This is transformed to the appropriate interval
     of currents [A] that the respective station can provide. E.g., if the station can provide from 6A to 32A, then -1
     corresponds to 6A and 1 corresponds to 32A.
     """
