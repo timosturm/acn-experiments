@@ -93,7 +93,7 @@ def pv_observation_mean_normalized(df_pv: pd.DataFrame) -> SimObservationFactory
 
     multi = SimObservation(
         lambda iface: _map_to_agent_ids(
-            spaces.Box(low=0, high=np.inf, shape=(1, ), dtype=np.float32), iface),
+            spaces.Box(low=-1, high=1, shape=(1, ), dtype=np.float32), iface),
         _single_to_multi_obs(single_obs_function, same_for_all=True),
         name=name)
 
@@ -138,7 +138,7 @@ def pv_observation_normalized(df_pv: pd.DataFrame) -> SimObservationFactory:
 
     multi = SimObservation(
         lambda iface: _map_to_agent_ids(
-            spaces.Box(low=0, high=np.inf, shape=(1, ), dtype=np.float32), iface),
+            spaces.Box(low=-1, high=1, shape=(1, ), dtype=np.float32), iface),
         _single_to_multi_obs(single_obs_function, same_for_all=True),
         name=name)
 

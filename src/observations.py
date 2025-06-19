@@ -5,6 +5,9 @@ from gymportal.auxilliaries.interfaces import GymTrainedInterface
 from icecream import ic
 
 from src.actions import min_max_normalization
+from gymportal.environment.observations.auxilliaries import _single_ev_observation, _multi_ev_observation, \
+    _single_constraints_observation, _multi_constraints_observation, _single_to_multi_obs, cyclic_transform, \
+    _cyclic_ev_observation, extract_minute_of_day, _map_to_agent_ids
 
 
 def minute_observation_stay() -> SimObservationFactory:
@@ -48,4 +51,10 @@ def minute_observation_stay() -> SimObservationFactory:
         obs_function,
         name=name)
 
-    return SimObservationFactory(single_agent_observation=single, multi_agent_observation=None)
+    multi = SimObservation(
+        lambda iface: _map_to_agent_ids(spaces.Box(
+            low=-1, high=1, shape=(1,), dtype=np.float32), iface),
+        _single_to_multi_obs(single._obs_function, same_for_all=False),
+        name=name)
+
+    return SimObservationFactory(single_agent_observation=single, multi_agent_observation=multi)

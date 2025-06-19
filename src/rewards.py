@@ -45,6 +45,14 @@ def f(x, frequency=np.pi / 2):
     return amplitude * np.sin(x * frequency)
 
 
+def _get_same_for_all(f):
+    def _same_for_all(env: BaseSimInterface):
+        reward = f(env)
+        return {station_id: reward for station_id in env.interface.station_ids}
+
+    return _same_for_all
+
+
 def sparse_soc_reward() -> SimReward:
     def single_reward(env: BaseSimInterface) -> float:
         evs_departing: List[acnportal.acnsim.EV] = [
@@ -62,7 +70,7 @@ def sparse_soc_reward() -> SimReward:
         return reward
 
     return SimReward(single_reward_function=single_reward,
-                     multi_reward_function=None,
+                     multi_reward_function=_get_same_for_all(single_reward),
                      name="missing_soc_penalty")
 
 
@@ -77,7 +85,7 @@ def missing_soc_penalty() -> SimReward:
             return -np.sum(demands) / len(demands)
 
     return SimReward(single_reward_function=single_reward,
-                     multi_reward_function=None,
+                     multi_reward_function=_get_same_for_all(single_reward),
                      name="missing_soc_penalty")
 
 
@@ -97,5 +105,5 @@ def unplug_penalty() -> SimReward:
             return -np.sum(demands) / len(demands)
 
     return SimReward(single_reward_function=single_reward,
-                     multi_reward_function=None,
+                     multi_reward_function=_get_same_for_all(single_reward),
                      name="unplug_penalty")
