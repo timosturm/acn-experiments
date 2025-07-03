@@ -18,6 +18,7 @@ from .aux import grid_use, pv_utilization, unused_pv
 
 
 def _energy_total(sim: EvaluationSimulator) -> np.ndarray:
+    """Returns the aggregated charging rates over all stations -> shape=(1, n_timesteps)"""
     return np.sum(sim.charging_rates, axis=0)
 
 
@@ -73,6 +74,20 @@ def unused_pv_metric(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
 
     return unused_pv(energy_total, pv_total)
 
+
+def peak_metric(sim: EvaluationSimulator) -> float:
+    energy_total = _energy_total(sim)
+
+    return np.max(energy_total)
+
+
+def peak_pv_metric(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
+    energy_total = _energy_total(sim)
+    pv_total = _pv_total(sim, df_pv)
+
+    return np.max(
+        np.clip(energy_total - pv_total, a_min=0, a_max=None)
+    )
 
 # def pv_utilization_mean(sim: EvaluationSimulator, df_pv: pd.DataFrame) -> float:
 #     """
