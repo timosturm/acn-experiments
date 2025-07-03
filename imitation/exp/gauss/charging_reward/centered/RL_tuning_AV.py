@@ -161,6 +161,8 @@ metrics = {
     # "pv utilization": lambda sim: pv_utilization_metric(sim, df_pv),
     "grid usage": lambda sim: grid_use_metric(sim, df_pv),
     "unused PV": lambda sim: unused_pv_metric(sim, df_pv),
+    "peak": peak_metric,
+    "peak pv": lambda sim: peak_pv_metric(sim, df_pv),
 }
 
 # prepare loading the best model
