@@ -1,3 +1,6 @@
+import time
+from optuna.pruners import MedianPruner
+import optuna
 from icecream import ic
 from acnportal.acndata import DataClient
 import pandas as pd
@@ -338,3 +341,44 @@ def get_generator(
     )
 
     return generator
+
+
+def create_study_with_retries(
+    study_name: str,
+    retries: int = 5,
+    wait_seconds: int = 30,
+    direction: str = "maximize",
+) -> optuna.study.Study:
+    """
+    Create an Optuna study with retry logic.
+
+    Args:
+        study_name (str): Name of the study and SQLite DB file.
+        retries (int): Number of retry attempts before failing.
+        wait_seconds (int): Seconds to wait between retries.
+
+    Returns:
+        optuna.study.Study: The created or loaded Optuna study.
+    """
+    for attempt in range(1, retries + 1):
+        try:
+            study = optuna.create_study(
+                study_name=study_name,
+                storage=f'sqlite:///{study_name}.db',
+                load_if_exists=True,
+                direction=direction,
+                pruner=MedianPruner(
+                    n_startup_trials=10,
+                    n_warmup_steps=5,
+                )
+            )
+
+            return study
+        
+        except Exception as e:
+            print(f"Attempt {attempt} failed to create study!")
+            if attempt == retries:
+                raise  # Re-raise the exception on the final attempt
+            
+            print(f"Retrying in {wait_seconds} seconds...")
+            time.sleep(wait_seconds)
