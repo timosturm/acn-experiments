@@ -26,7 +26,7 @@ from icecream import ic
 from src.imitation.args import MyArgs, ImitationArgs, RLArgs, EvalArgs
 from src.imitation.objective import objective_IL, objective_RL, objective_combined
 from src.rewards import sparse_soc_reward
-from src.utils import AV_pod_ids, get_generator, get_power_function, get_steps_per_epoch
+from src.utils import AV_pod_ids, create_study_with_retries, get_generator, get_power_function, get_steps_per_epoch
 
 
 # This is importent when we want to call this as a python script, because jupyter naturally has a higher recursion depth
@@ -202,17 +202,7 @@ args = MyArgs(
 )
 
 if __name__ == "__main__":
-    study = optuna.create_study(
-        study_name=study_name,
-        storage=f'sqlite:///{study_name}.db',
-        load_if_exists=True,
-        direction="maximize",
-        # sampler=
-        pruner=MedianPruner(
-            n_startup_trials=10,
-            n_warmup_steps=5,
-        )
-    )
+    study = create_study_with_retries(study_name)
 
     def objective_wrapper(trial):
         return objective_RL(
