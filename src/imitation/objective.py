@@ -22,7 +22,7 @@ from .rl import train_ppo
 from .utils import save_state_dict, validate_on_env, clean_up
 
 
-def objective_combine(*args, **kwargs):
+def objective_combined(*args, **kwargs):
     raise NotImplementedError()
 
 # def objective_combined(
