@@ -220,6 +220,7 @@ def train_ppo(
                 "losses/clipfrac": np.mean(clipfracs),
                 "losses/explained_variance": explained_var,
                 "charts/SPS": int(global_step / (time.time() - start_time)),
+                "charts/global_step": global_step,
             },
             step=global_step,
         )
