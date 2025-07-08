@@ -41,9 +41,15 @@ class TransformAction(object):
     Args:
 
     """
+    _min: float
+    _max: float
+
+    def __init__(self, min: float, max: float):
+        self._max = max
+        self._min = min
 
     def __call__(self, sample):
         sample = deepcopy(sample)
         sample["action"] = min_max_normalization(
-            old_min=0, old_max=32, new_min=-1, new_max=1, values=sample["action"])
+            old_min=0, old_max=32, new_min=self._min, new_max=self._max, values=sample["action"])
         return sample

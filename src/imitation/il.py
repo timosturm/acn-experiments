@@ -1,31 +1,41 @@
-from torch.utils.tensorboard import SummaryWriter
-
-
 from typing import Generator, Optional, OrderedDict, Tuple
-
-from src.cleanRL.agent import Agent
-
+from src.cleanRL.agent import Agent, BetaAgent
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.tensorboard import SummaryWriter
 import numpy as np
-from icecream import ic
 from src.imitation.args import ImitationArgs
 from src.imitation.dataset import MyDataset, TransformAction
 from torch.utils.data import DataLoader
 from src.imitation.utils import collate_to_float32
+from icecream import ic
+
+
+def _get_min_max_action(agent_class):
+    """Get the correct action space bounds for the agent class.
+    That is: [-1, 1] for a gaussian output distribution and [0, 1] for the beta distribution.
+    """
+
+    if agent_class is Agent:
+        return -1, 1
+    elif agent_class is BetaAgent:
+        return 0, 1
+    else:
+        raise ValueError(f"Unknown agent type: {agent_class}!")
 
 
 def imitate(
     args: ImitationArgs,
-    writer: SummaryWriter,
+    run,
     device: str,
     state_dict: Optional[OrderedDict],
 ) -> Generator[Tuple[int, OrderedDict], None, None]:
 
-    train_ds = MyDataset(args.train_ds, transform=TransformAction())
-    validation_ds = MyDataset(args.validation_ds, transform=TransformAction())
+    min_action, max_action = _get_min_max_action(args.agent_class)
+    transform = TransformAction(min_action, max_action)
+
+    train_ds = MyDataset(args.train_ds, transform=transform)
+    validation_ds = MyDataset(args.validation_ds, transform=transform)
 
     train_loader = DataLoader(
         train_ds,
@@ -65,29 +75,40 @@ def imitate(
             actions.append(action)
             true_actions.append(x["action"].to(device))
 
-        loss = criterion(torch.vstack(actions), torch.vstack(true_actions))
+        actions = torch.vstack(actions)
+        true_actions = torch.vstack(true_actions)
+        loss = criterion(actions, true_actions)
 
         return loss
 
     val_loss = calc_val_loss(agent, validation_loader)
 
+    global_step = 0
     for epoch in range(args.n_epochs):
-        for step, x in enumerate(train_loader):
+        for x in train_loader:
+            global_step += 1
+
             action, _, _, _ = agent.get_action_and_value(
                 x["observation"].to(device))
 
             loss = criterion(action, x["action"].to(device))
-            writer.add_scalar("imitation/train_loss", loss.item(), epoch)
 
             # if step % 1 == 0:
             agent.eval()
             val_loss = calc_val_loss(agent, validation_loader)
-            writer.add_scalar("imitation/validation_loss",
-                                val_loss.item(), epoch)
             agent.train()
+
+            run.log(
+                {
+                    "charts/epoch": global_step,
+                    "imitation/train_loss": loss.item(),
+                    "imitation/validation_loss": val_loss.item(),
+                },
+                step=global_step,
+            )
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-        yield epoch, agent.state_dict(), val_loss
+        yield global_step, agent.state_dict(), val_loss

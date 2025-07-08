@@ -374,11 +374,43 @@ def create_study_with_retries(
             )
 
             return study
-        
+
         except Exception as e:
             print(f"Attempt {attempt} failed to create study!")
             if attempt == retries:
                 raise  # Re-raise the exception on the final attempt
-            
+
             print(f"Retrying in {wait_seconds} seconds...")
             time.sleep(wait_seconds)
+
+
+def create_df(model, file: str, env, steps_per_epoch):
+    df_list = []
+
+    done = False
+    old_obs, _ = env.reset()
+
+    for _ in tqdm(range(steps_per_epoch)):
+
+        iface = env.unwrapped.interface
+        action = model.get_action(old_obs, iface)
+
+        new_obs, rew, terminated, truncated, _ = env.step(
+            action)
+        done = terminated or truncated
+
+        df_list.append([old_obs.tolist(), action.tolist(), rew, done])
+
+        if done:
+            new_obs, _ = env.reset()
+            done = False
+
+        old_obs = new_obs
+
+    df = pd.DataFrame(df_list, columns=[
+                      'observation', 'action', 'reward', 'done'])
+
+    if isinstance(file, str):
+        df.to_parquet(f'{file}.parquet.gzip', compression='gzip')
+    else:
+        df.to_parquet(file, compression='gzip')

@@ -242,16 +242,20 @@ def objective_IL(
 
     for global_step, state_dict, validation_loss in imitate(args.imitation, run, device, state_dict=None):
 
-        # eval_sim, new_return = validate_on_env(args.eval, state_dict)
-        # writer.add_scalar("imitation/return", new_return, epoch)
+        eval_sim, new_return = validate_on_env(args.eval, state_dict)
 
-        # print(f"epoch={epoch}, return={new_return}")
+        print(f"epoch={global_step}, return={new_return}")
+        run.log(
+            {
+                "imitation/return": new_return,
+            } | {
+                f"imitation/{metric_name}": f(eval_sim)for metric_name, f in args.eval.metrics.items()
+            },
+            step=global_step,
+        )
 
-        # for metric_name, f in args.eval.metrics.items():
-        #     writer.add_scalar(
-        #         f"imitation/{metric_name}", f(eval_sim), epoch)
+        metadata |= {"imitation": {"return": new_return, "epoch": global_step}}
 
-        # metadata |= {"imitation": {"return": new_return, "epoch": epoch}}
         save_state_dict(
             args,
             run_name,
