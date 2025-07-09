@@ -61,12 +61,12 @@ def validate_on_env(args: EvalArgs, state_dict: OrderedDict) -> float:
 
 
 def clean_up(args: MyArgs, run):
-
-    args.rl.envs.close()
-    args.eval.env.close()
-
-    # writer.flush()
-    # writer.close()
+    
+    if args.rl.envs:
+        args.rl.envs.close()
+        
+    if args.eval.env:
+        args.eval.env.close()
 
     run.finish()
 
