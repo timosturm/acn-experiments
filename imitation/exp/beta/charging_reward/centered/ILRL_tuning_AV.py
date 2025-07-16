@@ -167,7 +167,7 @@ metrics = {
 
 # prepare loading the best model
 name = "IL__0fbc96f7-44e0-4513-ab92-b38984a30602"
-best_state_dict = torch.load(f"../../../../{name}/IL_26400.mdl", weights_only=True)
+best_state_dict = torch.load(f"{name}/IL_26400.mdl", weights_only=True)
 # with open(f"{name}.json", 'rb') as file:
 #     js = json.loads(file.read())
 #     hiddens = [v for k, v in js["parameter"].items() if "_layer_" in k]
