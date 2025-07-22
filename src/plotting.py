@@ -4,9 +4,13 @@ from evaluation.utils import pv_for_sim
 from gymportal.plotting.plotting import plot_sim_evaluation
 
 
-def plot_sim_evaluation_pv(sim, df_pv):
-    fig = plot_sim_evaluation(sim)
-    ax = fig.axes[-2]
+def plot_sim_evaluation_pv(sim, df_pv, plot_rewards=True):
+    fig = plot_sim_evaluation(sim, plot_rewards=plot_rewards)
+
+    if plot_rewards:
+        ax = fig.axes[-2]
+    else:
+        ax = fig.axes[-1]
 
     # TODO Convert P to A and use the right timesteps
     amps = pv_for_sim(sim, df_pv)
